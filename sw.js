@@ -1,4 +1,8 @@
-const CACHE_NAME = 'josh-os-live'; // Single static name, no numbers needed
+// --- CONFIGURATION ---
+// CHANGE THIS NUMBER whenever you update your app
+const CACHE_NAME = 'josh-os-v14'; 
+
+// Add any new files you create here
 const urlsToCache = [
   './',
   './index.html',
@@ -10,10 +14,9 @@ const urlsToCache = [
   './apps/restaurantindex.html'
 ];
 
-// 1. Install & Activate Immediately (No Waiting)
+// --- INSTALLATION (Force Update) ---
 self.addEventListener('install', event => {
-    // Force this worker to become active immediately
-    self.skipWaiting();
+    self.skipWaiting(); // <--- This forces the new version to take over IMMEDIATELY
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
             return cache.addAll(urlsToCache);
@@ -21,18 +24,27 @@ self.addEventListener('install', event => {
     );
 });
 
+// --- ACTIVATION (Clean up old versions) ---
 self.addEventListener('activate', event => {
-    // Tell the active worker to take control of the page immediately
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cache => {
+                    if (cache !== CACHE_NAME) {
+                        return caches.delete(cache); // <--- Deletes the old "sticky" version
+                    }
+                })
+            );
+        }).then(() => self.clients.claim()) // <--- Takes control of the page immediately
+    );
 });
 
-// 2. The "Network First" Logic
+// --- FETCH (Network First, Cache Fallback) ---
 self.addEventListener('fetch', event => {
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                // If we got a valid response from the net, CLONE it to cache
-                // so we have it for next time (offline mode)
+                // If we are online, clone the fresh response to cache
                 if (!response || response.status !== 200 || response.type !== 'basic') {
                     return response;
                 }
@@ -43,7 +55,7 @@ self.addEventListener('fetch', event => {
                 return response;
             })
             .catch(() => {
-                // If network fails (offline), fall back to cache
+                // If offline, use the cached version
                 return caches.match(event.request);
             })
     );
