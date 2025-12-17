@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,251 +12,208 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('JoshOS Registered'))
-            .catch(err => console.log('Error:', err));
+          navigator.serviceWorker.register('sw.js').then(reg => {
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New update available!
+                  console.log('New update available');
+                  window.location.reload(); 
+                }
+              };
+            };
+          });
         });
       }
     </script>
 
     <title>Josh's Second Brain</title>
-    <link rel="icon" href="https://fav.farm/🧠" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
     
     <script>
-        // --- SECURITY GATEKEEPER ---
-        if (!localStorage.getItem('brain_session')) {
-            window.location.href = 'login.html';
-        }
+        if (!localStorage.getItem('brain_session')) window.location.href = 'login.html';
 
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        brain: {
-                            bg: '#0f172a',      
-                            surface: '#1e293b',  
-                            accent: '#38bdf8',    
-                            text: '#f1f5f9',      
-                            muted: '#94a3b8'      
-                        }
-                    },
-                    screens: {
-                        'xs': '375px',
-                        'sm': '640px',
-                        'md': '768px', // Sidebar appears from here up
-                        'lg': '1024px',
-                        'xl': '1280px',
+                        brain: { bg: '#0f172a', surface: '#1e293b', accent: '#38bdf8' }
                     }
                 }
             }
         }
     </script>
     <style>
-        .view-section { transition: opacity 0.2s ease-in-out; }
-        .hidden-view { display: none !important; opacity: 0; }
-        .active-view { opacity: 1; } 
-        
-        iframe { border: none; width: 100%; height: 100%; }
-        
-        /* Mobile Scrollbar hiding */
+        body { background-color: #0f172a; color: white; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
+        
+        /* Mobile Card Styling */
         .bento-card {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.6));
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.2s, border-color 0.2s;
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            transition: transform 0.2s;
         }
-        .bento-card:active { transform: scale(0.98); }
-        
-        /* Bottom Nav Styles */
+        .bento-card:active { transform: scale(0.96); }
+
+        /* Bottom Navigation Active State */
         .nav-item.active { color: #38bdf8; }
-        .nav-item.active i { weight: fill; }
+        .nav-item.active i { font-weight: bold; }
         
-        /* Safe Area for iPhone Home Bar */
+        /* Safe Area Padding for iPhone */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-brain-bg text-brain-text h-screen flex flex-col overflow-hidden selection:bg-brain-accent selection:text-brain-bg antialiased">
+<body class="h-screen flex flex-col overflow-hidden">
 
-    <aside class="w-64 bg-brain-surface/80 backdrop-blur-xl border-r border-slate-700/50 flex-col hidden md:flex fixed h-full z-50">
-        <div class="h-20 flex items-center px-6 border-b border-slate-700/30">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
-                <i class="ph ph-brain text-white text-xl"></i>
-            </div>
-            <span class="font-bold text-lg ml-3">JoshOS</span>
-        </div>
-        <nav class="flex-1 p-4 space-y-2">
-            <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-700/50 text-white rounded-xl"><i class="ph ph-squares-four text-xl mr-3"></i> Dashboard</button>
-            <button onclick="openSettings()" class="w-full flex items-center h-12 px-4 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors"><i class="ph ph-gear text-xl mr-3"></i> Settings</button>
+    <aside class="w-64 bg-brain-surface/90 border-r border-slate-700 hidden md:flex flex-col fixed h-full z-50">
+        <div class="h-20 flex items-center px-6"><i class="ph ph-brain text-brain-accent text-2xl mr-3"></i><span class="font-bold text-lg">JoshOS</span></div>
+        <nav class="p-4 space-y-2">
+            <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-700/50 rounded-xl text-sm font-medium"><i class="ph ph-squares-four text-lg mr-3"></i> Dashboard</button>
+            <button onclick="openSettings()" class="w-full flex items-center h-12 px-4 hover:bg-slate-800 rounded-xl text-sm font-medium text-slate-400"><i class="ph ph-gear text-lg mr-3"></i> Settings</button>
         </nav>
-        <div class="p-4 border-t border-slate-700/30">
-            <button onclick="logout()" class="w-full flex items-center h-10 px-4 text-red-400 hover:bg-slate-800 rounded-xl transition-colors"><i class="ph ph-sign-out text-xl mr-3"></i> Sign Out</button>
-        </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-64 w-full">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-64 w-full bg-brain-bg">
         
-        <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 z-10 shrink-0 bg-brain-bg/90 backdrop-blur-sm border-b border-slate-700/30">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex md:hidden items-center justify-center shadow-lg">
-                    <i class="ph ph-brain text-white text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-lg md:text-2xl font-bold text-white leading-tight"><span id="greeting-text">Hello</span>, Josh.</h1>
-                </div>
+        <header class="h-16 md:h-20 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/90 backdrop-blur border-b border-slate-800/50">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight"><span id="greeting-text" class="text-slate-400 font-normal">Hello,</span> Josh.</h1>
             </div>
-            <button onclick="openSettings()" class="md:hidden w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full rounded-full"></button>
+            <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full">
+            </button>
         </header>
 
-        <div id="view-dashboard" class="view-section active-view flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
-            <div class="max-w-5xl mx-auto space-y-6">
+        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-32">
+            
+            <div class="relative mb-6">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input type="text" id="ai-search-input" placeholder="Search or ask AI..." class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:border-brain-accent focus:outline-none placeholder-slate-500 shadow-sm" onkeydown="handleSearch(event)">
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div class="bento-card p-5 rounded-3xl relative overflow-hidden" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Focus</span>
+                        <i class="ph ph-target text-slate-600 text-xl"></i>
+                    </div>
+                    <div id="dashboard-focus-content">
+                        <p class="text-xl font-bold leading-tight mt-1">Loading tasks...</p>
+                        <p class="text-xs text-slate-400 mt-1">Syncing...</p>
+                    </div>
+                </div>
+
+                <button onclick="generateDailyBriefing()" class="w-full bento-card p-4 rounded-2xl flex items-center justify-center gap-3 group active:scale-95 transition-transform">
+                    <i class="ph ph-sparkle-fill text-purple-400 text-xl group-hover:scale-110 transition-transform"></i>
+                    <span class="font-semibold text-sm">Daily Briefing</span>
+                </button>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-lg font-bold">My Apps</h2>
+                    <button onclick="openModuleModal()" class="text-xs text-brain-accent font-medium bg-brain-accent/10 px-3 py-1.5 rounded-full">Add New</button>
+                </div>
                 
-                <div class="relative w-full">
-                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                    <input type="text" id="ai-search-input" placeholder="Search or ask AI..." 
-                        class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl py-3 pl-11 pr-4 text-sm focus:border-brain-accent focus:outline-none text-white shadow-sm"
-                        onkeydown="handleSearch(event)">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2 bento-card rounded-2xl p-5 relative overflow-hidden group cursor-pointer" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
-                        <div class="absolute top-0 right-0 p-4 opacity-10"><i class="ph ph-target text-8xl text-white"></i></div>
-                        <div class="relative z-10">
-                            <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Focus</span>
-                            <div id="dashboard-focus-content" class="mt-3">
-                                <p class="text-2xl font-bold text-white">Loading tasks...</p>
-                            </div>
-                            <div class="flex items-center gap-1 mt-4 text-xs text-slate-400"><span>Open Tasks</span> <i class="ph ph-caret-right"></i></div>
-                        </div>
+                <div id="apps-container" class="space-y-3 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
                     </div>
-
-                    <div class="bento-card rounded-2xl p-5 relative overflow-hidden cursor-pointer" onclick="openApp(myApps.findIndex(a => a.id === 'crm'))">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="bg-indigo-500/20 p-2 rounded-lg text-indigo-400"><i class="ph ph-users-three text-xl"></i></div>
-                        </div>
-                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Network</h3>
-                        <div id="dashboard-crm-content"><p class="text-sm text-slate-400">Checking...</p></div>
-                    </div>
-                </div>
-
-                <div class="bento-card rounded-2xl p-4 flex items-center justify-between cursor-pointer active:scale-95 transition-transform" onclick="generateDailyBriefing()">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                            <i class="ph ph-sparkle-fill text-white text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-sm">Daily Briefing</h3>
-                            <p class="text-xs text-slate-400">Tap to generate AI summary</p>
-                        </div>
-                    </div>
-                    <i class="ph ph-caret-right text-slate-500"></i>
-                </div>
-
-                <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-lg font-bold text-white">My Apps</h2>
-                        <button onclick="openModuleModal()" class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1"><i class="ph ph-plus"></i> Add</button>
-                    </div>
-                    
-                    <div id="apps-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        </div>
-                </div>
             </div>
         </div>
 
-        <div id="view-app-viewer" class="view-section hidden-view absolute inset-0 bg-brain-bg z-40 flex flex-col h-full w-full">
-            <div class="h-14 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
-                <button onclick="goHome()" class="text-slate-400 hover:text-white p-2"><i class="ph ph-arrow-left text-xl"></i></button>
-                <span id="current-app-title" class="font-bold text-white text-sm">App</span>
-                <div class="w-8"></div> </div>
-            <iframe id="app-frame" src="" class="flex-1 w-full bg-slate-900"></iframe>
+        <div id="view-app-viewer" class="hidden absolute inset-0 bg-brain-bg z-50 flex flex-col h-full w-full">
+            <div class="h-14 bg-slate-900 border-b border-slate-800 flex items-center px-2 shrink-0">
+                <button onclick="goHome()" class="p-3 text-slate-400 hover:text-white"><i class="ph ph-arrow-left text-xl"></i></button>
+                <span id="current-app-title" class="ml-2 font-bold text-sm">App</span>
+            </div>
+            <iframe id="app-frame" class="flex-1 w-full bg-slate-950 border-0"></iframe>
         </div>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full h-[80px] bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-around items-start pt-3 z-50 md:hidden pb-safe">
-        <button onclick="goHome()" class="nav-item active flex flex-col items-center gap-1 w-16">
-            <i class="ph ph-squares-four text-2xl"></i>
+    <nav class="fixed bottom-0 left-0 w-full h-[85px] bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-around items-start pt-4 z-40 md:hidden pb-safe">
+        <button onclick="goHome()" class="nav-item active flex flex-col items-center w-16 gap-1.5" id="nav-home">
+            <i class="ph ph-house text-2xl"></i>
             <span class="text-[10px] font-medium">Home</span>
         </button>
-        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-16">
+        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1.5" id="nav-ai">
             <i class="ph ph-sparkle text-2xl"></i>
             <span class="text-[10px] font-medium">AI</span>
         </button>
-        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-16">
+        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1.5" id="nav-settings">
             <i class="ph ph-gear text-2xl"></i>
             <span class="text-[10px] font-medium">Settings</span>
         </button>
     </nav>
 
-    <div id="ai-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[100] flex items-end md:items-center justify-center sm:p-4">
-        <div class="bg-slate-800 w-full max-w-2xl rounded-t-3xl md:rounded-3xl border-t md:border border-slate-700 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-3xl">
-                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center animate-pulse"><i class="ph ph-sparkle-fill text-white"></i></div><h3 class="font-bold text-white">Gemini</h3></div>
-                <button onclick="closeAiModal()" class="p-2 bg-slate-700 rounded-full text-white"><i class="ph ph-x"></i></button>
+    <div id="ai-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-end sm:items-center justify-center sm:p-4">
+        <div class="bg-slate-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
+            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-white flex items-center gap-2"><i class="ph ph-sparkle-fill text-purple-500"></i> Gemini</h3>
+                <button onclick="closeAiModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"><i class="ph ph-x"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto prose prose-invert prose-sm max-w-none text-slate-300" id="ai-modal-body"></div>
+            <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-300" id="ai-modal-body"></div>
         </div>
     </div>
 
-    <div id="module-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-slate-800 w-full max-w-sm rounded-2xl border border-slate-700 shadow-xl p-5">
-            <h3 class="font-bold text-lg text-white mb-4">Add App</h3>
+    <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
+            <h3 class="font-bold text-lg text-white mb-4">Add Custom App</h3>
             <div class="space-y-3">
-                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
-                <input type="text" id="mod-desc" placeholder="Description" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
-                <input type="text" id="mod-icon" placeholder="Icon (e.g., ph-cube)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
-                <input type="text" id="mod-url" placeholder="File Path (apps/file.html)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                <input type="text" id="mod-desc" placeholder="Short Description" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                <div class="flex gap-2">
+                    <input type="text" id="mod-icon" placeholder="Icon (ph-cube)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                    <input type="text" id="mod-color" placeholder="Color (blue)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                </div>
+                <input type="text" id="mod-url" placeholder="File Path (apps/file.html)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
             </div>
-            <div class="flex justify-end gap-2 mt-5">
-                <button onclick="closeModuleModal()" class="px-4 py-2 text-slate-400 text-sm">Cancel</button>
-                <button onclick="saveModule()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold">Add</button>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeModuleModal()" class="flex-1 py-3 bg-slate-800 rounded-xl text-sm font-bold text-slate-400">Cancel</button>
+                <button onclick="saveModule()" class="flex-1 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white">Add App</button>
             </div>
         </div>
     </div>
 
-    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-slate-800 w-full max-w-md rounded-2xl border border-slate-700 shadow-xl flex flex-col max-h-[85vh]">
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center"><h3 class="font-bold text-white">Settings</h3><button onclick="closeSettings()" class="text-slate-400"><i class="ph ph-x text-lg"></i></button></div>
-            <div class="p-4 overflow-y-auto space-y-6">
-                <div><label class="text-xs text-slate-500 font-bold uppercase">Name</label><input type="text" id="settings-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg mt-1 px-3 py-2 text-white text-sm"></div>
-                <div><label class="text-xs text-slate-500 font-bold uppercase">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-900 border border-slate-700 rounded-lg mt-1 px-3 py-2 text-white text-sm"></div>
-                <div class="pt-2"><button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 rounded-lg text-sm font-bold border border-red-500/20">Sign Out</button></div>
+    <div id="settings-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
+            <h3 class="font-bold text-lg text-white mb-6">Settings</h3>
+            <div class="space-y-4">
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Your Name</label><input type="text" id="settings-name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1"></div>
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1"></div>
+                <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-bold mt-4">Sign Out</button>
             </div>
-            <div class="p-4 border-t border-slate-700"><button onclick="saveSettings()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-bold">Save Changes</button></div>
+            <button onclick="saveSettings()" class="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-bold mt-4">Save Changes</button>
         </div>
     </div>
 
     <script>
-        // --- DATA & CONFIG ---
         const defaultApps = [
             { id: 'finance', title: "Vault Finance", desc: "Budget & Cashflow", icon: "ph-wallet", color: "emerald", url: "apps/finance.html" },
             { id: 'crm', title: "Personal CRM", desc: "Network & Calendar", icon: "ph-users-three", color: "indigo", url: "apps/Personalcrm.html" },
             { id: 'food', title: "Gourmet Tracker", desc: "Wishlist & Reviews", icon: "ph-bowl-food", color: "orange", url: "apps/restaurantindex.html" },
             { id: 'todo', title: "Task Master", desc: "To-Do List & Goals", icon: "ph-check-square", color: "green", url: "apps/todo.html" },
-            { id: 'journal', title: "Mind Log", desc: "Daily Reflections", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html" }
+            { id: 'journal', title: "Mind Log", desc: "Reflections", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html" }
         ];
 
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
-        // --- INIT ---
         function init() {
             loadUserData();
             renderApps();
-            // Drag and Drop with DELAY for Mobile
+            
+            // MOBILE-OPTIMIZED DRAG & DROP
             new Sortable(document.getElementById('apps-container'), { 
-                animation: 150, 
-                ghostClass: 'opacity-50', 
-                delay: 200, 
+                animation: 200, 
+                delay: 250, // Long press to drag (prevents click blocking)
                 delayOnTouchOnly: true,
+                ghostClass: 'opacity-50',
                 onEnd: function (evt) { 
                     const order = []; 
                     document.getElementById('apps-container').querySelectorAll('.bento-card').forEach(el => order.push(el.getAttribute('data-id'))); 
@@ -266,33 +222,32 @@
             });
         }
 
-        // --- RENDER APPS ---
         function renderApps() {
             const container = document.getElementById('apps-container');
             container.innerHTML = '';
             
+            // Reordering Logic
             let savedOrder = JSON.parse(localStorage.getItem('brain_app_order')) || [];
             const appMap = new Map(myApps.map(app => [app.id, app]));
-            
-            // Reorder based on saved preference
             savedOrder.forEach(id => { if (appMap.has(id)) { renderCard(appMap.get(id)); appMap.delete(id); } });
             appMap.forEach(app => renderCard(app));
             
-            updateFocusWidget(); updateCRMWidget();
+            updateFocusWidget();
         }
 
         function renderCard(app) {
             const card = document.createElement('div');
             const idx = myApps.findIndex(a => a.id === app.id);
             card.setAttribute('data-id', app.id);
-            card.className = `bento-card p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95`;
+            // STACKED LIST STYLE FOR MOBILE
+            card.className = `bento-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer active:scale-95 select-none`;
             card.onclick = () => openApp(idx);
             card.innerHTML = `
-                <div class="w-12 h-12 bg-${app.color || 'blue'}-500/20 rounded-xl flex items-center justify-center text-${app.color || 'blue'}-400 shrink-0">
+                <div class="w-12 h-12 bg-${app.color}-500/10 rounded-xl flex items-center justify-center text-${app.color}-400 shrink-0 border border-${app.color}-500/20">
                     <i class="ph ${app.icon} text-2xl"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-white text-sm truncate">${app.title}</h3>
+                    <h3 class="font-bold text-white text-sm">${app.title}</h3>
                     <p class="text-xs text-slate-400 truncate">${app.desc}</p>
                 </div>
                 <i class="ph ph-caret-right text-slate-600"></i>
@@ -300,60 +255,47 @@
             document.getElementById('apps-container').appendChild(card);
         }
 
-        // --- APP NAVIGATION ---
         function openApp(index) {
             const app = myApps[index];
             document.getElementById('current-app-title').innerText = app.title;
             const frame = document.getElementById('app-frame');
             frame.src = app.url;
             
-            // View Switch
-            document.getElementById('view-dashboard').classList.add('hidden-view');
-            document.getElementById('view-app-viewer').classList.remove('hidden-view');
-            document.querySelector('nav').classList.add('hidden'); // Hide bottom nav in app mode
+            document.getElementById('view-dashboard').classList.add('hidden');
+            document.getElementById('view-app-viewer').classList.remove('hidden');
+            document.querySelector('nav').classList.add('hidden'); // Hide bottom bar
         }
 
         function goHome() {
             document.getElementById('app-frame').src = "";
-            document.getElementById('view-dashboard').classList.remove('hidden-view');
-            document.getElementById('view-app-viewer').classList.add('hidden-view');
-            document.querySelector('nav').classList.remove('hidden'); // Show bottom nav
-            updateFocusWidget(); updateCRMWidget();
+            document.getElementById('view-dashboard').classList.remove('hidden');
+            document.getElementById('view-app-viewer').classList.add('hidden');
+            document.querySelector('nav').classList.remove('hidden'); // Show bottom bar
+            updateFocusWidget();
         }
 
-        // --- WIDGETS ---
         function updateFocusWidget() {
             const el = document.getElementById('dashboard-focus-content');
             try {
                 const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
                 const pending = tasks.filter(t => t.status === 'pending');
-                if (pending.length > 0) el.innerHTML = `<p class="text-xl font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-400">Due: ${pending[0].dueDate}</p>`;
-                else el.innerHTML = `<p class="text-xl text-slate-500">All caught up!</p>`;
+                if (pending.length > 0) el.innerHTML = `<p class="text-lg font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-400">Due: ${pending[0].dueDate}</p>`;
+                else el.innerHTML = `<p class="text-lg text-slate-500 font-medium">All caught up!</p>`;
             } catch(e) { el.innerHTML = `<p class="text-sm text-slate-500">No tasks found.</p>`; }
         }
-        function updateCRMWidget() {
-            const el = document.getElementById('dashboard-crm-content');
-            try {
-                const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [];
-                if (contacts.length > 0) el.innerHTML = `<p class="text-sm text-white font-bold">${contacts[0].firstName} ${contacts[0].lastName}</p><p class="text-[10px] text-slate-400">${contacts[0].company}</p>`;
-                else el.innerHTML = `<p class="text-xs text-slate-500">No contacts.</p>`;
-            } catch(e) { el.innerHTML = `<p class="text-xs text-slate-500">No data.</p>`; }
-        }
 
-        // --- AI & SEARCH ---
+        // --- AI STUFF ---
         async function handleSearch(e) {
             if(e.key === 'Enter') {
-                const q = e.target.value;
-                if(!q) return;
-                openAiModal('Thinking...');
-                e.target.value = '';
+                const q = e.target.value; if(!q) return;
+                openAiModal('Thinking...'); e.target.value = '';
                 const res = await callGemini(`User query: ${q}. Answer concisely in markdown.`);
                 document.getElementById('ai-modal-body').innerHTML = marked.parse(res);
             }
         }
         async function generateDailyBriefing() {
             openAiModal('Generating Briefing...');
-            const name = document.getElementById('sidebar-username') ? document.getElementById('sidebar-username').innerText : 'Josh';
+            const name = JSON.parse(localStorage.getItem('brain_user'))?.name || 'Josh';
             const res = await callGemini(`Give a short, motivational daily briefing for ${name}.`);
             document.getElementById('ai-modal-body').innerHTML = marked.parse(res);
         }
@@ -370,47 +312,21 @@
             } catch(e) { return "Error connecting to AI."; }
         }
 
-        // --- MODALS ---
+        // --- UTILS ---
         function openAiModal(txt) { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-modal-body').innerHTML = `<p class="text-center text-slate-400 animate-pulse">${txt}</p>`; }
         function closeAiModal() { document.getElementById('ai-modal').classList.add('hidden'); }
-        
-        function openModuleModal() { ['mod-title','mod-desc','mod-icon','mod-url'].forEach(id=>document.getElementById(id).value=''); document.getElementById('module-modal').classList.remove('hidden'); }
+        function openModuleModal() { document.getElementById('module-modal').classList.remove('hidden'); }
         function closeModuleModal() { document.getElementById('module-modal').classList.add('hidden'); }
         function saveModule() {
-            const title = document.getElementById('mod-title').value;
-            if(!title) return;
-            const newApp = { 
-                id: 'app-'+Date.now(), 
-                title, 
-                desc: document.getElementById('mod-desc').value, 
-                icon: document.getElementById('mod-icon').value || 'ph-cube', 
-                color: 'blue', 
-                url: document.getElementById('mod-url').value 
-            };
-            myApps.push(newApp);
-            localStorage.setItem('brain_apps', JSON.stringify(myApps));
-            renderApps();
-            closeModuleModal();
+            const title = document.getElementById('mod-title').value; if(!title) return;
+            const newApp = { id: 'app-'+Date.now(), title, desc: document.getElementById('mod-desc').value, icon: document.getElementById('mod-icon').value || 'ph-cube', color: 'blue', url: document.getElementById('mod-url').value };
+            myApps.push(newApp); localStorage.setItem('brain_apps', JSON.stringify(myApps)); renderApps(); closeModuleModal();
         }
-
         function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); document.getElementById('settings-name').value = JSON.parse(localStorage.getItem('brain_user'))?.name || 'User'; document.getElementById('settings-api-key').value = localStorage.getItem('brain_gemini_key')||''; }
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
-        function saveSettings() {
-            const name = document.getElementById('settings-name').value;
-            localStorage.setItem('brain_user', JSON.stringify({name, email:'user@example.com'}));
-            localStorage.setItem('brain_gemini_key', document.getElementById('settings-api-key').value);
-            loadUserData();
-            closeSettings();
-        }
+        function saveSettings() { localStorage.setItem('brain_user', JSON.stringify({name: document.getElementById('settings-name').value})); localStorage.setItem('brain_gemini_key', document.getElementById('settings-api-key').value); loadUserData(); closeSettings(); }
         function logout() { localStorage.removeItem('brain_session'); window.location.href='login.html'; }
-
-        function loadUserData() {
-            const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'};
-            const el = document.getElementById('greeting-text');
-            if(el) el.innerText = new Date().getHours() < 12 ? 'Good Morning' : 'Good Afternoon';
-            const nameEl = document.getElementById('sidebar-username');
-            if(nameEl) nameEl.innerText = u.name;
-        }
+        function loadUserData() { const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'}; document.getElementById('greeting-text').innerText = new Date().getHours() < 12 ? 'Good Morning,' : 'Good Afternoon,'; }
 
         init();
     </script>
