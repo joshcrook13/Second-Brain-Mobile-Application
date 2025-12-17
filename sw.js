@@ -1,4 +1,4 @@
-const CACHE_NAME = 'josh-os-v5';
+const CACHE_NAME = 'josh-os-v6';
 const urlsToCache = [
   './',
   './index.html',

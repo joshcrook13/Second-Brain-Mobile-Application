@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#020617"> <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#020617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://fav.farm/🧠">
 
     <script>
+      // Force Update Logic (v6)
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js?v=5').then(reg => {
+          navigator.serviceWorker.register('sw.js?v=6').then(reg => {
              reg.update();
              reg.onupdatefound = () => {
                const newWorker = reg.installing;
                newWorker.onstatechange = () => {
                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                   if(confirm("New App Update Available! Load it?")) window.location.reload();
+                   if(confirm("New Big Tile Update! Load it?")) window.location.reload();
                  }
                };
              };
@@ -50,13 +52,14 @@
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
 
-        /* Native App-Like Cards */
-        .app-row {
-            background-color: #0f172a; /* Slate 900 */
-            border: 1px solid #1e293b; /* Slate 800 */
-            transition: background-color 0.2s;
+        /* BIG TILE STYLE */
+        .app-tile {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            transition: transform 0.1s;
         }
-        .app-row:active { background-color: #1e293b; }
+        .app-tile:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.8); }
 
         /* Focus Widget Gradient */
         .focus-card {
@@ -64,7 +67,6 @@
             border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
-        /* Bottom Nav */
         .nav-item.active { color: #38bdf8; }
         .nav-item.active i { weight: fill; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -72,7 +74,7 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-brain-bg">
 
-    <aside class="w-72 bg-brain-card border-r border-brain-border hidden md:flex flex-col fixed h-full z-50">
+    <aside class="w-72 bg-brain-card border-r border-brain-border hidden lg:flex flex-col fixed h-full z-50">
         <div class="h-20 flex items-center px-6"><i class="ph ph-brain text-brain-accent text-3xl mr-3"></i><span class="font-bold text-xl tracking-tight">JoshOS</span></div>
         <nav class="p-4 space-y-2">
             <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-800 rounded-xl text-sm font-bold text-white"><i class="ph ph-squares-four text-lg mr-3"></i> Dashboard</button>
@@ -80,14 +82,14 @@
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-72 w-full">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative lg:ml-72 w-full">
         
-        <header class="h-16 md:h-20 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/80 backdrop-blur-md border-b border-brain-border/50 sticky top-0">
+        <header class="h-20 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/90 backdrop-blur-md border-b border-brain-border/50 sticky top-0">
             <div>
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-0.5" id="date-display">WEDNESDAY</p>
-                <h1 class="text-xl font-bold text-white tracking-tight"><span id="greeting-text">Good Afternoon</span>, Josh.</h1>
+                <h1 class="text-2xl font-bold text-white tracking-tight"><span id="greeting-text">Hi</span>, Josh.</h1>
             </div>
-            <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shadow-sm">
+            <button onclick="openSettings()" class="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shadow-sm">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full">
             </button>
         </header>
@@ -95,52 +97,35 @@
         <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-32 space-y-6">
             
             <div class="relative">
-                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg"></i>
-                <input type="text" id="ai-search-input" placeholder="Search or ask AI..." class="w-full bg-brain-card border border-brain-border rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-brain-accent focus:outline-none shadow-sm" onkeydown="handleSearch(event)">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xl"></i>
+                <input type="text" id="ai-search-input" placeholder="Search..." class="w-full bg-brain-card border border-brain-border rounded-2xl py-4 pl-12 pr-4 text-base text-white placeholder-slate-500 focus:border-brain-accent focus:outline-none shadow-sm" onkeydown="handleSearch(event)">
             </div>
 
-            <div class="focus-card p-5 rounded-3xl relative overflow-hidden shadow-lg" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
-                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="ph ph-target text-8xl text-emerald-400"></i></div>
+            <div class="focus-card p-6 rounded-3xl relative overflow-hidden shadow-lg" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
+                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="ph ph-target text-9xl text-emerald-400"></i></div>
                 <div class="relative z-10">
-                    <div class="flex items-center gap-2 mb-3">
-                        <span class="bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Current Focus</span>
+                    <span class="bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm">Current Focus</span>
+                    <div id="dashboard-focus-content" class="mt-4">
+                        <p class="text-2xl font-bold text-white leading-tight">Loading...</p>
                     </div>
-                    <div id="dashboard-focus-content">
-                        <p class="text-xl font-bold text-white leading-snug">Loading tasks...</p>
-                        <p class="text-xs text-emerald-200/70 mt-1 font-medium">Syncing...</p>
-                    </div>
-                    <div class="flex items-center gap-1 mt-4 text-xs text-emerald-300 font-bold"><span>View Task Board</span> <i class="ph ph-arrow-right"></i></div>
                 </div>
             </div>
-
-            <button onclick="generateDailyBriefing()" class="w-full bg-brain-card border border-brain-border p-4 rounded-2xl flex items-center justify-between group active:scale-95 transition-transform shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
-                        <i class="ph ph-sparkle-fill text-white text-lg"></i>
-                    </div>
-                    <div class="text-left">
-                        <h3 class="font-bold text-white text-sm">Daily Briefing</h3>
-                        <p class="text-xs text-slate-400">Tap to generate AI summary</p>
-                    </div>
-                </div>
-                <i class="ph ph-caret-right text-slate-600"></i>
-            </button>
 
             <div>
-                <div class="flex justify-between items-end mb-3 px-1">
-                    <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">My Apps</h2>
-                    <button onclick="openModuleModal()" class="text-xs text-brain-accent font-bold">Edit</button>
+                <div class="flex justify-between items-end mb-4 px-1">
+                    <h2 class="text-base font-bold text-slate-300 uppercase tracking-wide">My Apps</h2>
+                    <button onclick="openModuleModal()" class="text-xs text-brain-accent font-bold bg-brain-accent/10 px-3 py-1.5 rounded-full">Add App</button>
                 </div>
                 
-                <div id="apps-container" class="space-y-3">
+                <div id="apps-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     </div>
             </div>
         </div>
 
         <div id="view-app-viewer" class="hidden absolute inset-0 bg-brain-bg z-50 flex flex-col h-full w-full">
-            <div class="h-14 bg-brain-card border-b border-brain-border flex items-center justify-between px-2 shrink-0">
-                <button onclick="goHome()" class="p-3 text-slate-400 hover:text-white flex items-center gap-1"><i class="ph ph-caret-left text-lg"></i> Back</button>
-                <span id="current-app-title" class="font-bold text-white text-sm">App</span>
+            <div class="h-16 bg-brain-card border-b border-brain-border flex items-center justify-between px-3 shrink-0">
+                <button onclick="goHome()" class="p-3 text-slate-300 hover:text-white flex items-center gap-2 font-bold"><i class="ph ph-arrow-left text-xl"></i> Back</button>
+                <span id="current-app-title" class="font-bold text-white text-base">App</span>
                 <div class="w-12"></div>
             </div>
             <iframe id="app-frame" class="flex-1 w-full bg-black border-0"></iframe>
@@ -148,18 +133,18 @@
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full h-[88px] bg-brain-card/95 backdrop-blur-xl border-t border-brain-border flex justify-around items-start pt-4 z-40 md:hidden pb-safe">
-        <button onclick="goHome()" class="nav-item active flex flex-col items-center w-16 gap-1" id="nav-home">
-            <i class="ph ph-house-fill text-2xl"></i>
-            <span class="text-[10px] font-bold">Home</span>
+    <nav class="fixed bottom-0 left-0 w-full h-[90px] bg-brain-card/95 backdrop-blur-xl border-t border-brain-border flex justify-around items-start pt-4 z-40 lg:hidden pb-safe">
+        <button onclick="goHome()" class="nav-item active flex flex-col items-center w-20 gap-1.5" id="nav-home">
+            <i class="ph ph-house-fill text-3xl"></i>
+            <span class="text-xs font-bold">Home</span>
         </button>
-        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1" id="nav-ai">
-            <i class="ph ph-sparkle text-2xl"></i>
-            <span class="text-[10px] font-medium">AI</span>
+        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center w-20 gap-1.5" id="nav-ai">
+            <i class="ph ph-sparkle text-3xl"></i>
+            <span class="text-xs font-medium">Briefing</span>
         </button>
-        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1" id="nav-settings">
-            <i class="ph ph-gear text-2xl"></i>
-            <span class="text-[10px] font-medium">Settings</span>
+        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center w-20 gap-1.5" id="nav-settings">
+            <i class="ph ph-gear text-3xl"></i>
+            <span class="text-xs font-medium">Settings</span>
         </button>
     </nav>
 
@@ -169,51 +154,42 @@
                 <h3 class="font-bold text-white flex items-center gap-2"><i class="ph ph-sparkle-fill text-purple-500"></i> Gemini AI</h3>
                 <button onclick="closeAiModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"><i class="ph ph-x"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-300" id="ai-modal-body"></div>
+            <div class="p-6 overflow-y-auto text-base leading-relaxed text-slate-300" id="ai-modal-body"></div>
         </div>
     </div>
 
     <div id="settings-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
         <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
-            <h3 class="font-bold text-lg text-white mb-6">Settings</h3>
+            <h3 class="font-bold text-xl text-white mb-6">Settings</h3>
             <div class="space-y-4">
-                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Your Name</label><input type="text" id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1 focus:border-brain-accent focus:outline-none"></div>
-                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1 focus:border-brain-accent focus:outline-none"></div>
-                <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-bold mt-4">Sign Out</button>
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Name</label><input type="text" id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-4 text-white mt-1"></div>
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">API Key</label><input type="password" id="settings-api-key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-4 text-white mt-1"></div>
+                <button onclick="logout()" class="w-full py-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl font-bold mt-4">Sign Out</button>
             </div>
-            <div class="flex gap-3 mt-6">
-                 <button onclick="closeSettings()" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold">Cancel</button>
-                 <button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl text-sm font-bold">Save</button>
-            </div>
+            <button onclick="saveSettings()" class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold mt-4">Save</button>
         </div>
     </div>
-
+    
     <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
         <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
-            <h3 class="font-bold text-lg text-white mb-4">Add App</h3>
+            <h3 class="font-bold text-xl text-white mb-4">Add App</h3>
             <div class="space-y-3">
-                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                <input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                <div class="flex gap-2">
-                    <input type="text" id="mod-icon" placeholder="Icon (ph-cube)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                    <input type="text" id="mod-color" placeholder="Color (blue)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                </div>
-                <input type="text" id="mod-url" placeholder="Path (apps/file.html)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
+                <input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
+                <div class="flex gap-2"><input type="text" id="mod-icon" placeholder="Icon" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="text" id="mod-color" placeholder="Color" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div>
+                <input type="text" id="mod-url" placeholder="Path" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
             </div>
-            <div class="flex gap-3 mt-6">
-                <button onclick="closeModuleModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold">Cancel</button>
-                <button onclick="saveModule()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl text-sm font-bold">Add</button>
-            </div>
+            <div class="flex gap-3 mt-6"><button onclick="closeModuleModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold">Cancel</button><button onclick="saveModule()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Add</button></div>
         </div>
     </div>
 
     <script>
         const defaultApps = [
-            { id: 'finance', title: "Vault Finance", desc: "Budget & Cashflow", icon: "ph-wallet", color: "emerald", url: "apps/finance.html" },
-            { id: 'crm', title: "Personal CRM", desc: "Network & Calendar", icon: "ph-users-three", color: "indigo", url: "apps/Personalcrm.html" },
-            { id: 'food', title: "Gourmet Tracker", desc: "Wishlist & Reviews", icon: "ph-bowl-food", color: "orange", url: "apps/restaurantindex.html" },
-            { id: 'todo', title: "Task Master", desc: "To-Do List & Goals", icon: "ph-check-square", color: "green", url: "apps/todo.html" },
-            { id: 'journal', title: "Mind Log", desc: "Reflections", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html" }
+            { id: 'finance', title: "Vault Finance", desc: "Budget", icon: "ph-wallet", color: "emerald", url: "apps/finance.html" },
+            { id: 'crm', title: "CRM", desc: "Network", icon: "ph-users-three", color: "indigo", url: "apps/Personalcrm.html" },
+            { id: 'food', title: "Gourmet", desc: "Food", icon: "ph-bowl-food", color: "orange", url: "apps/restaurantindex.html" },
+            { id: 'todo', title: "Tasks", desc: "To-Do", icon: "ph-check-square", color: "green", url: "apps/todo.html" },
+            { id: 'journal', title: "Mind Log", desc: "Journal", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html" }
         ];
 
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
@@ -224,13 +200,10 @@
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
             new Sortable(document.getElementById('apps-container'), { 
-                animation: 200, 
-                delay: 250, 
-                delayOnTouchOnly: true,
-                ghostClass: 'opacity-50',
+                animation: 200, delay: 250, delayOnTouchOnly: true, ghostClass: 'opacity-50',
                 onEnd: function (evt) { 
                     const order = []; 
-                    document.getElementById('apps-container').querySelectorAll('.app-row').forEach(el => order.push(el.getAttribute('data-id'))); 
+                    document.getElementById('apps-container').querySelectorAll('.app-tile').forEach(el => order.push(el.getAttribute('data-id'))); 
                     localStorage.setItem('brain_app_order', JSON.stringify(order)); 
                 } 
             });
@@ -250,19 +223,21 @@
             const card = document.createElement('div');
             const idx = myApps.findIndex(a => a.id === app.id);
             card.setAttribute('data-id', app.id);
-            // STACKED ROW STYLE - PREMIUM LOOK
-            card.className = `app-row p-4 rounded-2xl flex items-center gap-4 cursor-pointer select-none shadow-sm`;
+            // BIG TILE STYLE
+            card.className = `app-tile p-5 rounded-3xl flex items-center justify-between gap-4 cursor-pointer select-none shadow-sm`;
             card.onclick = () => openApp(idx);
             card.innerHTML = `
-                <div class="w-12 h-12 bg-${app.color}-500/10 rounded-xl flex items-center justify-center text-${app.color}-400 shrink-0 border border-${app.color}-500/20">
-                    <i class="ph ${app.icon} text-2xl"></i>
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-${app.color}-500/10 rounded-2xl flex items-center justify-center text-${app.color}-400 shrink-0 border border-${app.color}-500/20">
+                        <i class="ph ${app.icon} text-3xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">${app.title}</h3>
+                        <p class="text-sm text-slate-400">${app.desc}</p>
+                    </div>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-white text-base leading-tight">${app.title}</h3>
-                    <p class="text-xs text-slate-400 truncate mt-0.5">${app.desc}</p>
-                </div>
-                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
-                    <i class="ph ph-caret-right"></i>
+                <div class="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500">
+                    <i class="ph ph-caret-right text-lg"></i>
                 </div>
             `;
             document.getElementById('apps-container').appendChild(card);
@@ -291,12 +266,11 @@
             try {
                 const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
                 const pending = tasks.filter(t => t.status === 'pending');
-                if (pending.length > 0) el.innerHTML = `<p class="text-xl font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-200">Due: ${pending[0].dueDate}</p>`;
-                else el.innerHTML = `<p class="text-xl text-slate-400 font-bold">All caught up!</p>`;
-            } catch(e) { el.innerHTML = `<p class="text-sm text-slate-500">No tasks found.</p>`; }
+                if (pending.length > 0) el.innerHTML = `<p class="text-2xl font-bold text-white truncate">${pending[0].title}</p><p class="text-sm text-emerald-200 mt-1">Due: ${pending[0].dueDate}</p>`;
+                else el.innerHTML = `<p class="text-2xl text-slate-300 font-bold">All caught up!</p>`;
+            } catch(e) { el.innerHTML = `<p class="text-lg text-slate-500">No tasks found.</p>`; }
         }
 
-        // --- AI ---
         async function handleSearch(e) {
             if(e.key === 'Enter') {
                 const q = e.target.value; if(!q) return;
@@ -324,7 +298,6 @@
             } catch(e) { return "Error connecting to AI."; }
         }
 
-        // --- UTILS ---
         function openAiModal(txt) { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-modal-body').innerHTML = `<p class="text-center text-slate-400 animate-pulse">${txt}</p>`; }
         function closeAiModal() { document.getElementById('ai-modal').classList.add('hidden'); }
         function openModuleModal() { document.getElementById('module-modal').classList.remove('hidden'); }
