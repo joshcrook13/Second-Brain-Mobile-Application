@@ -12,7 +12,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS Worker Active'));
+          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v16 Active'));
         });
       }
     </script>
@@ -37,28 +37,9 @@
     <style>
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-
-        /* Modern Glass Cards */
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-        }
-        
-        /* Horizontal Snap Scrolling */
-        .snap-scroll {
-            display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            gap: 12px;
-            padding-bottom: 4px; /* Space for scrollbar if visible */
-        }
-        .snap-card {
-            scroll-snap-align: center;
-            flex-shrink: 0;
-        }
-
-        /* FAB & Nav */
+        .glass-panel { background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); }
+        .snap-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 4px; }
+        .snap-card { scroll-snap-align: center; flex-shrink: 0; }
         .nav-item { transition: color 0.2s; color: #64748b; }
         .nav-item.active { color: #38bdf8; }
         .fab-container { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); background: #020617; padding: 6px; border-radius: 50%; border-top: 1px solid #1e293b; box-shadow: 0 -10px 20px rgba(0,0,0,0.2); }
@@ -78,7 +59,6 @@
     </aside>
 
     <main class="flex-1 flex flex-col h-full overflow-hidden relative lg:ml-72 w-full">
-        
         <header class="h-16 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/95 backdrop-blur-md border-b border-brain-border/50 sticky top-0">
             <div>
                 <p class="text-[10px] font-bold text-brain-accent uppercase tracking-widest mb-0.5" id="date-display">LOADING...</p>
@@ -94,49 +74,30 @@
             <div>
                 <div class="flex justify-between items-end mb-3 px-1">
                     <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Dining Wishlist</h2>
-                    <button onclick="openApp(2)" class="text-xs text-brain-accent">View All</button>
+                    <button onclick="openAppById('food')" class="text-xs text-brain-accent">View All</button>
                 </div>
-                
-                <div id="dining-widget" class="snap-scroll hide-scroll">
-                    <div class="snap-card w-64 h-32 bg-slate-800/50 rounded-2xl flex items-center justify-center border border-slate-700/50">
-                        <p class="text-xs text-slate-500">Loading restaurants...</p>
-                    </div>
-                </div>
+                <div id="dining-widget" class="snap-scroll hide-scroll"></div>
             </div>
 
             <div>
                 <div class="flex justify-between items-end mb-3 px-1">
                     <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Connect</h2>
-                    <button onclick="openApp(1)" class="text-xs text-brain-accent">CRM</button>
+                    <button onclick="openAppById('crm')" class="text-xs text-brain-accent">CRM</button>
                 </div>
-                <div id="crm-widget" class="flex gap-4 overflow-x-auto hide-scroll py-1">
-                    </div>
+                <div id="crm-widget" class="flex gap-4 overflow-x-auto hide-scroll py-1"></div>
             </div>
 
             <div>
                 <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 px-1">Up Next</h2>
-                <div id="tasks-widget" class="space-y-2">
-                    </div>
+                <div id="tasks-widget" class="space-y-2"></div>
             </div>
 
             <div class="pt-4 border-t border-slate-800/50">
                 <div class="grid grid-cols-4 gap-4">
-                    <button onclick="openApp(0)" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20"><i class="ph ph-wallet text-xl"></i></div>
-                        <span class="text-[10px] font-medium">Finance</span>
-                    </button>
-                    <button onclick="openApp(4)" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20"><i class="ph ph-book-bookmark text-xl"></i></div>
-                        <span class="text-[10px] font-medium">Journal</span>
-                    </button>
-                    <button onclick="generateDailyBriefing()" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20"><i class="ph ph-sparkle text-xl"></i></div>
-                        <span class="text-[10px] font-medium">Ask AI</span>
-                    </button>
-                    <button onclick="switchTab('apps')" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white transition-colors">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700"><i class="ph ph-dots-nine text-xl"></i></div>
-                        <span class="text-[10px] font-medium">More</span>
-                    </button>
+                    <button onclick="openAppById('finance')" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white"><div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20"><i class="ph ph-wallet text-xl"></i></div><span class="text-[10px] font-medium">Finance</span></button>
+                    <button onclick="openAppById('journal')" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white"><div class="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 border border-purple-500/20"><i class="ph ph-book-bookmark text-xl"></i></div><span class="text-[10px] font-medium">Journal</span></button>
+                    <button onclick="generateDailyBriefing()" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white"><div class="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20"><i class="ph ph-sparkle text-xl"></i></div><span class="text-[10px] font-medium">Ask AI</span></button>
+                    <button onclick="switchTab('apps')" class="flex flex-col items-center gap-2 text-slate-400 hover:text-white"><div class="w-12 h-12 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-700"><i class="ph ph-dots-nine text-xl"></i></div><span class="text-[10px] font-medium">More</span></button>
                 </div>
             </div>
         </div>
@@ -175,18 +136,43 @@
                     <button onclick="showQaForm('food')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform"><div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white"><i class="ph ph-bowl-food text-xl"></i></div><span class="text-[10px] font-bold text-white">Food</span></button>
                 </div>
             </div>
-            <div id="qa-task" class="hidden"><h3 class="text-white font-bold mb-4">New Task</h3><input id="t-title" placeholder="Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><input type="date" id="t-date" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><button onclick="saveQuickTask()" class="w-full py-3 bg-green-600 rounded-xl font-bold text-white">Save</button></div>
+
+            <div id="qa-task" class="hidden">
+                <h3 class="text-white font-bold mb-4">New Task</h3>
+                <input id="t-title" placeholder="Task Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
+                <div class="flex gap-2 mb-3">
+                    <input type="date" id="t-date" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white text-sm">
+                    <select id="t-prio" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white text-sm">
+                        <option value="high">High</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <textarea id="t-subs" placeholder="Subtasks (one per line)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white h-20 text-sm"></textarea>
+                <button onclick="saveQuickTask()" class="w-full py-3 bg-green-600 rounded-xl font-bold text-white">Save Task</button>
+            </div>
+
             <div id="qa-journal" class="hidden"><h3 class="text-white font-bold mb-4">Journal</h3><input id="j-title" placeholder="Title" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><textarea id="j-body" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white h-24"></textarea><button onclick="saveQuickJournal()" class="w-full py-3 bg-purple-600 rounded-xl font-bold text-white">Save</button></div>
             <div id="qa-expense" class="hidden"><h3 class="text-white font-bold mb-4">Expense</h3><input id="e-amount" type="number" placeholder="Amount" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><input id="e-desc" placeholder="For..." class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><button onclick="saveQuickExpense()" class="w-full py-3 bg-emerald-600 rounded-xl font-bold text-white">Save</button></div>
             <div id="qa-food" class="hidden"><h3 class="text-white font-bold mb-4">Restaurant</h3><input id="f-name" placeholder="Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><select id="f-status" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><option value="wishlist">Wishlist</option></select><button onclick="saveQuickFood()" class="w-full py-3 bg-orange-600 rounded-xl font-bold text-white">Save</button></div>
+            
             <button onclick="closeQuickCapture()" class="w-full mt-6 py-4 text-slate-500 font-bold border-t border-slate-800">Close</button>
         </div>
     </div>
 
     <div id="ai-modal" class="fixed inset-0 bg-black/80 hidden z-[100] flex items-center justify-center p-4"><div class="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-800 p-6"><h3 class="text-white font-bold mb-4">Gemini AI</h3><div id="ai-modal-body" class="text-slate-300 text-sm h-64 overflow-y-auto mb-4"></div><button onclick="document.getElementById('ai-modal').classList.add('hidden')" class="w-full py-3 bg-slate-800 text-white rounded-xl">Close</button></div></div>
     <div id="settings-modal" class="fixed inset-0 bg-black/80 hidden z-[100] flex items-center justify-center p-4"><div class="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-800 p-6"><h3 class="text-white font-bold mb-4">Settings</h3><div class="space-y-4"><input id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="password" id="settings-api-key" placeholder="API Key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><div class="flex gap-3 mt-4"><button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl">Cancel</button><button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Save</button></div></div></div>
-    <div id="module-modal" class="hidden"></div> <script>
-        const defaultApps = [{id:'finance',title:"Finance",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},{id:'crm',title:"CRM",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},{id:'food',title:"Food",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},{id:'todo',title:"Tasks",icon:"ph-check-square",color:"green",url:"apps/todo.html"},{id:'journal',title:"Journal",icon:"ph-book-bookmark",color:"purple",url:"apps/journalapp.html"}];
+    <div id="module-modal" class="hidden"></div> 
+
+    <script>
+        // CORE APP LIST - Ensure IDs match what buttons look for
+        const defaultApps = [
+            {id:'finance',title:"Finance",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
+            {id:'crm',title:"CRM",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
+            {id:'food',title:"Food",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
+            {id:'todo',title:"Tasks",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
+            {id:'journal',title:"Journal",icon:"ph-book-bookmark",color:"purple",url:"apps/journalapp.html"}
+        ];
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
         function init() {
@@ -197,80 +183,84 @@
             document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
         }
 
-        // --- DASHBOARD WIDGETS LOGIC ---
+        // --- DASHBOARD DATA SYNC ---
         function renderDashboardWidgets() {
-            // 1. DINING WIDGET (Wishlist)
+            // 1. DINING
             const places = JSON.parse(localStorage.getItem('journal_restaurants')) || [];
-            const wishlist = places.filter(p => p.status === 'wishlist').slice(0, 5); // Top 5
+            const wishlist = places.filter(p => p.status === 'wishlist').slice(0, 5);
             const diningContainer = document.getElementById('dining-widget');
-            
             if (wishlist.length === 0) {
-                diningContainer.innerHTML = `<div class="snap-card w-full h-32 bg-slate-800/30 rounded-2xl flex flex-col items-center justify-center border border-dashed border-slate-700"><p class="text-xs text-slate-500 font-medium">No saved places yet.</p><button onclick="showQaForm('food')" class="mt-2 text-xs text-brain-accent">Add One +</button></div>`;
+                diningContainer.innerHTML = `<div class="snap-card w-full h-32 bg-slate-800/30 rounded-2xl flex flex-col items-center justify-center border border-dashed border-slate-700 cursor-pointer" onclick="showQaForm('food')"><p class="text-xs text-slate-500 font-medium">Empty Wishlist</p><span class="text-xs text-brain-accent mt-1">Add Place +</span></div>`;
             } else {
                 diningContainer.innerHTML = wishlist.map(p => `
                     <div class="snap-card w-40 h-32 bg-slate-800 rounded-2xl p-4 flex flex-col justify-between border border-slate-700 relative overflow-hidden flex-shrink-0">
                         <div class="z-10"><i class="ph ph-fork-knife text-orange-400 text-xl mb-1"></i><h3 class="font-bold text-white text-sm leading-tight line-clamp-2">${p.name}</h3></div>
                         <span class="z-10 text-[10px] text-slate-400 bg-black/30 px-2 py-1 rounded w-fit">Wishlist</span>
-                        <div class="absolute top-0 right-0 w-16 h-16 bg-orange-500/10 rounded-bl-full -mr-2 -mt-2"></div>
-                    </div>
-                `).join('');
+                    </div>`).join('');
             }
 
-            // 2. CRM WIDGET (Connect)
-            // Mock data structure if not present
-            const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [
-                {name: "Mom", color: "pink"}, {name: "Boss", color: "blue"}, {name: "Sarah", color: "purple"}
-            ]; 
+            // 2. CRM (Mock data if empty)
+            const crmContacts = JSON.parse(localStorage.getItem('crm_contacts')) || [];
+            const displayContacts = crmContacts.length > 0 ? crmContacts : [{name: "Mom", color: "pink"}, {name: "Network", color: "blue"}];
             const crmContainer = document.getElementById('crm-widget');
             crmContainer.innerHTML = `
-                <button onclick="showQaForm('task')" class="flex flex-col items-center gap-1 min-w-[50px]">
-                    <div class="w-12 h-12 rounded-full border border-dashed border-slate-600 flex items-center justify-center text-slate-500"><i class="ph ph-plus"></i></div>
-                    <span class="text-[10px] text-slate-500">Add</span>
-                </button>
-                ${contacts.map(c => `
-                    <div class="flex flex-col items-center gap-1 min-w-[50px]">
-                        <div class="w-12 h-12 rounded-full bg-${c.color || 'slate'}-500/20 border border-${c.color || 'slate'}-500/30 flex items-center justify-center text-white font-bold text-xs">${c.name.substring(0,2).toUpperCase()}</div>
-                        <span class="text-[10px] text-slate-400 truncate w-14 text-center">${c.name}</span>
-                    </div>
-                `).join('')}
+                <button onclick="openAppById('crm')" class="flex flex-col items-center gap-1 min-w-[50px]"><div class="w-12 h-12 rounded-full border border-dashed border-slate-600 flex items-center justify-center text-slate-500"><i class="ph ph-plus"></i></div><span class="text-[10px] text-slate-500">View</span></button>
+                ${displayContacts.map(c => `<div class="flex flex-col items-center gap-1 min-w-[50px]"><div class="w-12 h-12 rounded-full bg-${c.color||'slate'}-500/20 border border-${c.color||'slate'}-500/30 flex items-center justify-center text-white font-bold text-xs">${c.name.substring(0,2).toUpperCase()}</div><span class="text-[10px] text-slate-400 truncate w-14 text-center">${c.name}</span></div>`).join('')}
             `;
 
-            // 3. TASKS WIDGET (Priority)
+            // 3. TASKS
             const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
             const pending = tasks.filter(t => t.status === 'pending').sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 3);
             const tasksContainer = document.getElementById('tasks-widget');
-            
             if (pending.length === 0) {
-                tasksContainer.innerHTML = `<div class="p-4 rounded-xl bg-slate-800/30 border border-slate-700 text-center text-xs text-slate-500">No pending tasks. You're free!</div>`;
+                tasksContainer.innerHTML = `<div class="p-4 rounded-xl bg-slate-800/30 border border-slate-700 text-center text-xs text-slate-500">No pending tasks.</div>`;
             } else {
-                tasksContainer.innerHTML = pending.map(t => `
-                    <div class="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700/50 rounded-xl">
-                        <div class="w-5 h-5 rounded-md border-2 border-slate-600"></div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="text-sm font-medium text-white truncate">${t.title}</h4>
-                            <p class="text-[10px] text-${t.priority === 'high' ? 'red-400' : 'slate-400'}">Due: ${t.dueDate}</p>
-                        </div>
-                    </div>
-                `).join('');
+                tasksContainer.innerHTML = pending.map(t => `<div class="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700/50 rounded-xl" onclick="openAppById('todo')"><div class="w-5 h-5 rounded-md border-2 border-slate-600"></div><div class="flex-1 min-w-0"><h4 class="text-sm font-medium text-white truncate">${t.title}</h4><p class="text-[10px] text-${t.priority === 'high' ? 'red-400' : 'slate-400'}">Due: ${t.dueDate}</p></div></div>`).join('');
             }
         }
 
-        // --- NAVIGATION & UTILS ---
+        // --- NAVIGATION SMART LOOKUP ---
+        function openAppById(targetId) {
+            const idx = myApps.findIndex(app => app.id === targetId);
+            if(idx !== -1) openApp(idx);
+            else alert("App not installed: " + targetId);
+        }
+
         function switchTab(id) { ['view-dashboard','view-apps'].forEach(i=>document.getElementById(i).classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); const b=document.getElementById(`nav-${id}`); if(b){ document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); b.classList.add('active'); } }
         function openApp(i) { const a=myApps[i]; document.getElementById('current-app-title').innerText=a.title; document.getElementById('app-frame').src=a.url; ['view-dashboard','view-apps'].forEach(id=>document.getElementById(id).classList.add('hidden')); document.getElementById('view-app-viewer').classList.remove('hidden'); document.querySelector('nav').classList.add('hidden'); }
         function goBack() { document.getElementById('app-frame').src = ""; document.getElementById('view-app-viewer').classList.add('hidden'); document.querySelector('nav').classList.remove('hidden'); document.getElementById('view-dashboard').classList.remove('hidden'); renderDashboardWidgets(); }
         function renderApps() { const c=document.getElementById('apps-container'); c.innerHTML=''; myApps.forEach((a,i)=>{c.innerHTML+=`<div onclick="openApp(${i})" class="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-4 cursor-pointer"><div class="w-12 h-12 bg-${a.color}-500/10 rounded-xl flex items-center justify-center text-${a.color}-400 border border-${a.color}-500/20"><i class="ph ${a.icon} text-2xl"></i></div><div><h3 class="font-bold text-white text-base">${a.title}</h3></div><i class="ph ph-caret-right text-slate-600 ml-auto"></i></div>`;}); }
         
-        // --- QUICK CAPTURE ---
+        // --- UPDATED SAVERS ---
         function openQuickCapture() { resetQa(); document.getElementById('quick-add-modal').classList.remove('hidden'); }
         function closeQuickCapture() { document.getElementById('quick-add-modal').classList.add('hidden'); }
         function resetQa() { document.getElementById('qa-menu').classList.remove('hidden'); ['qa-task','qa-journal','qa-expense','qa-food'].forEach(id => document.getElementById(id).classList.add('hidden')); }
         function showQaForm(type) { document.getElementById('qa-menu').classList.add('hidden'); document.getElementById(`qa-${type}`).classList.remove('hidden'); }
         
-        // --- SAVERS (Simplified) ---
-        function saveQuickTask() { const t=document.getElementById('t-title').value || "New Task"; const d=document.getElementById('t-date').value; const tasks=JSON.parse(localStorage.getItem('tm_tasks'))||[]; tasks.push({id:Date.now(),title:t,status:'pending',priority:'medium',dueDate:d}); localStorage.setItem('tm_tasks',JSON.stringify(tasks)); closeQuickCapture(); renderDashboardWidgets(); }
+        function saveQuickTask() {
+            const t = document.getElementById('t-title').value;
+            const d = document.getElementById('t-date').value;
+            const p = document.getElementById('t-prio').value;
+            const s = document.getElementById('t-subs').value; // Get subtasks
+            if(!t) return alert("Name Required");
+            
+            const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
+            // Assuming your To-Do app handles subtasks as an array or string property
+            tasks.push({
+                id: Date.now(),
+                title: t,
+                status: 'pending',
+                priority: p,
+                dueDate: d,
+                subtasks: s ? s.split('\n').filter(line => line.trim() !== '') : [] // Convert text to array
+            });
+            localStorage.setItem('tm_tasks', JSON.stringify(tasks));
+            closeQuickCapture(); renderDashboardWidgets(); alert("Task Saved!");
+        }
+
         function saveQuickFood() { const n=document.getElementById('f-name').value; if(n){ const p=JSON.parse(localStorage.getItem('journal_restaurants'))||[]; p.unshift({id:Date.now(),name:n,status:'wishlist',date:new Date().toISOString()}); localStorage.setItem('journal_restaurants',JSON.stringify(p)); closeQuickCapture(); renderDashboardWidgets(); } }
-        // (Other savers omitted for brevity but logic exists in previous versions)
+        function saveQuickJournal() { const t=document.getElementById('j-title').value; const b=document.getElementById('j-body').value; if(t){ const e=JSON.parse(localStorage.getItem('jn_entries'))||[]; e.unshift({id:Date.now(),title:t,body:b,date:new Date().toISOString()}); localStorage.setItem('jn_entries',JSON.stringify(e)); closeQuickCapture(); alert("Saved"); } }
+        function saveQuickExpense() { const a=document.getElementById('e-amount').value; const d=document.getElementById('e-desc').value; if(a){ const tx=JSON.parse(localStorage.getItem('fin_transactions'))||[]; tx.unshift({id:Date.now(),amount:parseFloat(a),description:d,date:new Date().toISOString(),type:'expense'}); localStorage.setItem('fin_transactions',JSON.stringify(tx)); closeQuickCapture(); alert("Logged"); } }
 
         function loadUserData(){const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'Josh'};document.getElementById('greeting-text').innerText=new Date().getHours()<12?'Good Morning':'Good Afternoon';if(u.avatar)document.getElementById('header-avatar').src=u.avatar;}
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'User'};document.getElementById('settings-name').value=u.name;document.getElementById('settings-api-key').value=localStorage.getItem('brain_gemini_key')||'';}
