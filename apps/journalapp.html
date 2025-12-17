@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Log - Journal</title>
+    
+    <!-- React & DOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js for Insights -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#151f32', 900: '#0f172a' },
+                        brand: { 500: '#8b5cf6', 600: '#7c3aed' } // Violet brand for Journal
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Mood Slider Styling */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #a78bfa; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px; }
+        
+        /* Editor */
+        .editor-textarea { min-height: 400px; line-height: 1.7; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- 1. DATA LAYER & INTEGRATIONS ---
+        
+        const getExternalData = () => {
+            const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
+            const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [];
+            const restaurants = JSON.parse(localStorage.getItem('journal_restaurants')) || [];
+            return { tasks, contacts, restaurants };
+        };
+
+        const getDateStr = (dateObj) => dateObj.toISOString().split('T')[0];
+
+        // UPDATED TEMPLATES
+        const DEFAULT_TEMPLATES = [
+            { 
+                id: 'tmp_morning', 
+                title: '☀️ Morning Manifest', 
+                questions: [
+                    '**I am grateful for...**',
+                    '**What is my main focus today?**',
+                    '**Daily Affirmation:** "I am..."'
+                ] 
+            },
+            { 
+                id: 'tmp_evening', 
+                title: '🌙 Evening Wind-down', 
+                questions: [
+                    '**3 Amazing things that happened today:**',
+                    '**What was a challenge, and what did I learn?**',
+                    '**What is on my mind for tomorrow?**'
+                ] 
+            },
+            { 
+                id: 'tmp_weekly', 
+                title: '📅 Weekly Reset', 
+                questions: [
+                    '**What were my biggest wins this week?**',
+                    '**What didn\'t go according to plan?**',
+                    '**One goal for next week:**'
+                ] 
+            }
+        ];
+
+        // Seed Data
+        const SEED_ENTRIES = [
+            { 
+                id: 'e1', date: getDateStr(new Date(Date.now() - 86400000)), title: 'A quiet Sunday', 
+                body: "Spent the day reading and relaxing. Needed this reset.", 
+                mood: 4, energy: 3, tags: ['personal', 'rest'], entry_type: 'daily_log',
+                links: { tasks: [], contacts: [], restaurants: [] }
+            },
+            { 
+                id: 'e2', date: getDateStr(new Date()), title: 'Project Kickoff', 
+                body: "Started the new dev project today. Feeling excited but a bit overwhelmed by the scope.", 
+                mood: 3, energy: 5, tags: ['work'], entry_type: 'daily_log',
+                links: { tasks: [], contacts: [], restaurants: [] }
+            }
+        ];
+
+        const db = {
+            getEntries: () => {
+                const entries = JSON.parse(localStorage.getItem('jn_entries')) || [];
+                return entries.map(e => ({ ...e, links: e.links || { tasks: [], contacts: [], restaurants: [] } }));
+            },
+            saveEntry: (entry) => {
+                const entries = db.getEntries();
+                const existingIndex = entries.findIndex(e => e.id === entry.id);
+                let updated;
+                if (existingIndex >= 0) {
+                    updated = entries.map(e => e.id === entry.id ? entry : e);
+                } else {
+                    updated = [entry, ...entries];
+                }
+                localStorage.setItem('jn_entries', JSON.stringify(updated));
+                return updated;
+            },
+            deleteEntry: (id) => {
+                const entries = db.getEntries().filter(e => e.id !== id);
+                localStorage.setItem('jn_entries', JSON.stringify(entries));
+                return entries;
+            },
+            getTemplates: () => JSON.parse(localStorage.getItem('jn_templates')) || DEFAULT_TEMPLATES,
+            init: () => {
+                if (!localStorage.getItem('jn_entries')) localStorage.setItem('jn_entries', JSON.stringify(SEED_ENTRIES));
+            }
+        };
+
+        db.init();
+
+        // --- 2. SHARED COMPONENTS ---
+
+        const Button = ({ children, onClick, variant = 'primary', className = '' }) => {
+            const variants = {
+                primary: "bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-violet-500/20",
+                secondary: "bg-slate-700 hover:bg-slate-600 text-white",
+                ghost: "text-slate-400 hover:text-white hover:bg-slate-800",
+                danger: "text-red-400 hover:bg-red-500/10"
+            };
+            return <button onClick={onClick} className={`px-4 py-2 rounded-lg font-medium transition-all active:scale-95 flex items-center justify-center gap-2 ${variants[variant]} ${className}`}>{children}</button>;
+        };
+
+        const Badge = ({ text }) => <span className="bg-slate-800 border border-slate-700 text-slate-300 px-2 py-0.5 rounded text-xs">#{text}</span>;
+
+        const MoodIcon = ({ mood }) => {
+            const icons = ['ph-smiley-sad', 'ph-smiley-meh', 'ph-smiley', 'ph-smiley-wink', 'ph-smiley-star'];
+            const colors = ['text-red-400', 'text-orange-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+            return <i className={`ph ${icons[mood-1] || 'ph-smiley'} ${colors[mood-1]} text-xl`}></i>;
+        };
+
+        // --- 3. VIEWS ---
+
+        // A) JOURNAL HOME (Dashboard)
+        const JournalHome = ({ entries, onNewEntry, onViewEntry }) => {
+            const today = new Date().toISOString().split('T')[0];
+            const hasJournaledToday = entries.some(e => e.date === today);
+            
+            let streak = 0;
+            let current = new Date();
+            while (true) {
+                const dateStr = current.toISOString().split('T')[0];
+                if (entries.some(e => e.date === dateStr)) {
+                    streak++;
+                    current.setDate(current.getDate() - 1);
+                } else if (dateStr === today && !hasJournaledToday) {
+                    current.setDate(current.getDate() - 1); 
+                } else {
+                    break;
+                }
+            }
+
+            const avgMood = entries.length > 0 ? (entries.reduce((acc, e) => acc + (e.mood || 3), 0) / entries.length).toFixed(1) : '-';
+
+            return (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="glass p-6 rounded-2xl flex items-center gap-4 border-l-4 border-brand-500">
+                            <div className="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-400"><i className="ph ph-fire text-2xl"></i></div>
+                            <div><h3 className="text-2xl font-bold text-white">{streak} Days</h3><p className="text-xs text-slate-400 uppercase tracking-wide font-bold">Current Streak</p></div>
+                        </div>
+                        <div className="glass p-6 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400"><i className="ph ph-notebook text-2xl"></i></div>
+                            <div><h3 className="text-2xl font-bold text-white">{entries.length}</h3><p className="text-xs text-slate-400 uppercase tracking-wide font-bold">Total Entries</p></div>
+                        </div>
+                        <div className="glass p-6 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400"><i className="ph ph-chart-line-up text-2xl"></i></div>
+                            <div><h3 className="text-2xl font-bold text-white">{avgMood}/5</h3><p className="text-xs text-slate-400 uppercase tracking-wide font-bold">Avg Mood</p></div>
+                        </div>
+                    </div>
+
+                    {!hasJournaledToday && (
+                        <div className="bg-gradient-to-r from-brand-600 to-indigo-600 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10">
+                                <h2 className="text-2xl font-bold text-white mb-2">How are you feeling today?</h2>
+                                <p className="text-indigo-100">Take a moment to reflect and clear your mind.</p>
+                            </div>
+                            <button onClick={() => onNewEntry()} className="mt-4 md:mt-0 relative z-10 bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-50 transition-colors flex items-center gap-2"><i className="ph ph-pencil-simple text-xl"></i> Write Entry</button>
+                            <div className="absolute top-0 right-0 opacity-10 transform translate-x-1/4 -translate-y-1/4"><i className="ph ph-feather text-9xl text-white"></i></div>
+                        </div>
+                    )}
+
+                    <div>
+                        <h3 className="text-xl font-bold text-white mb-4">Recent Entries</h3>
+                        <div className="space-y-3">
+                            {entries.slice(0, 5).map(entry => (
+                                <div key={entry.id} onClick={() => onViewEntry(entry)} className="glass p-5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer border border-transparent hover:border-slate-700">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-lg text-white">{entry.title || 'Untitled'}</h4>
+                                            <p className="text-xs text-slate-400">{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">{entry.mood && <MoodIcon mood={entry.mood} />}</div>
+                                    </div>
+                                    <p className="text-slate-300 text-sm line-clamp-2">{entry.body.replace(/<[^>]*>?/gm, '')}</p>
+                                    <div className="flex gap-2 mt-3">{entry.tags && entry.tags.map(t => <Badge key={t} text={t} />)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // B) TIMELINE VIEW (New)
+        const TimelineView = ({ entries, onViewEntry }) => {
+            const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            return (
+                <div className="space-y-6 animate-slide-in">
+                    <h2 className="text-2xl font-bold text-white">Journal History</h2>
+                    <div className="space-y-6 relative border-l-2 border-slate-700 ml-4 pl-8">
+                        {sortedEntries.map(entry => (
+                            <div key={entry.id} className="relative group">
+                                <div className="absolute -left-[39px] top-4 w-5 h-5 rounded-full bg-slate-900 border-2 border-brand-500 group-hover:bg-brand-500 transition-colors"></div>
+                                <div onClick={() => onViewEntry(entry)} className="glass p-6 rounded-2xl cursor-pointer border border-transparent hover:border-brand-500/30 transition-all">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <div className="text-sm font-bold text-brand-400 mb-1">{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                            <h3 className="text-xl font-bold text-white">{entry.title || 'Untitled Entry'}</h3>
+                                        </div>
+                                        <div className="bg-slate-800 p-2 rounded-lg"><MoodIcon mood={entry.mood || 3} /></div>
+                                    </div>
+                                    <div className="prose prose-invert prose-sm max-w-none text-slate-300 mb-4 line-clamp-3">
+                                        <div dangerouslySetInnerHTML={{ __html: entry.body.replace(/\n/g, '<br/>') }}></div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {entry.tags && entry.tags.map(t => <Badge key={t} text={t} />)}
+                                        {entry.energy && <span className="bg-slate-800 border border-slate-700 text-slate-400 px-2 py-0.5 rounded text-xs flex items-center gap-1"><i className="ph ph-lightning"></i> {entry.energy}/5 Energy</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // C) ENTRY EDITOR
+        const EntryEditor = ({ initialData, onSave, onCancel, templates }) => {
+            const [entry, setEntry] = useState(initialData || {
+                id: 'e' + Date.now(),
+                date: getDateStr(new Date()),
+                title: '',
+                body: '',
+                mood: 3,
+                energy: 3,
+                tags: [],
+                entry_type: 'daily_log',
+                links: { tasks: [], contacts: [], restaurants: [] }
+            });
+
+            // State for toggling sidebar visibility
+            const [showSidebar, setShowSidebar] = useState(false); // Default hidden on load for cleaner UI
+            
+            const externalData = useMemo(() => getExternalData(), []);
+            const [showLinkMenu, setShowLinkMenu] = useState(false);
+            const [tagInput, setTagInput] = useState('');
+
+            const applyTemplate = (tmplId) => {
+                if (!tmplId) return;
+                const tmpl = templates.find(t => t.id === tmplId);
+                if (tmpl) {
+                    const formattedQuestions = tmpl.questions.map(q => `\n${q}\n\n`).join('');
+                    setEntry({ ...entry, body: entry.body + (entry.body ? '\n\n' : '') + formattedQuestions });
+                }
+            };
+
+            const handleSave = () => {
+                if (!entry.body.trim()) return alert("Write something first!");
+                onSave(entry);
+            };
+
+            const addLink = (type, id) => {
+                const currentLinks = entry.links[type] || [];
+                if (!currentLinks.includes(id)) {
+                    setEntry({ ...entry, links: { ...entry.links, [type]: [...currentLinks, id] } });
+                }
+                setShowLinkMenu(false);
+            };
+
+            const addTag = (e) => {
+                if (e.key === 'Enter' && tagInput.trim()) {
+                    setEntry({ ...entry, tags: [...entry.tags, tagInput.trim()] });
+                    setTagInput('');
+                }
+            };
+
+            // Setup sidebar visibility based on screen size initially
+            useEffect(() => {
+                if (window.innerWidth >= 1024) {
+                    setShowSidebar(true);
+                }
+            }, []);
+
+            return (
+                <div className="h-full flex flex-col animate-slide-in relative">
+                    {/* Toolbar */}
+                    <div className="flex justify-between items-center mb-4 shrink-0">
+                        <button onClick={onCancel} className="text-slate-400 hover:text-white flex items-center gap-2"><i className="ph ph-arrow-left"></i> Back</button>
+                        <div className="flex gap-2">
+                             {/* Toggle Sidebar Button */}
+                            <button 
+                                onClick={() => setShowSidebar(!showSidebar)} 
+                                className={`p-2 rounded-lg text-slate-400 hover:text-white border border-slate-700 ${showSidebar ? 'bg-slate-700 text-white' : 'bg-transparent'}`} 
+                                title="Toggle Settings"
+                            >
+                                <i className="ph ph-sliders text-lg"></i>
+                            </button>
+                            <select onChange={(e) => applyTemplate(e.target.value)} className="bg-slate-800 text-slate-300 text-xs rounded px-2 py-1 border border-slate-700 outline-none">
+                                <option value="">+ Load Template</option>
+                                {templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                            </select>
+                            <Button onClick={handleSave}>Save Entry</Button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col lg:flex-row gap-6 overflow-hidden relative">
+                        {/* Main Editor */}
+                        <div className={`flex-1 flex flex-col gap-4 overflow-y-auto pr-2 ${showSidebar ? '' : 'w-full'}`}>
+                            <input type="text" placeholder="Title (optional)" className="bg-transparent text-3xl font-bold text-white placeholder-slate-600 outline-none w-full" value={entry.title} onChange={e => setEntry({...entry, title: e.target.value})} />
+                            <div className="flex items-center gap-4 text-sm text-slate-400">
+                                <span>{new Date(entry.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold uppercase">Mood:</span>
+                                    <div className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+                                        {[1,2,3,4,5].map(m => (
+                                            <button key={m} onClick={() => setEntry({...entry, mood: m})} className={`p-1 rounded hover:bg-slate-700 ${entry.mood === m ? 'bg-slate-700 text-white scale-110' : 'text-slate-500'}`}>
+                                                <MoodIcon mood={m} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <textarea className="flex-1 bg-transparent text-lg text-slate-300 placeholder-slate-700 outline-none resize-none editor-textarea" placeholder="Start writing..." value={entry.body} onChange={e => setEntry({...entry, body: e.target.value})}></textarea>
+                            
+                            {/* Tags display in main area if sidebar hidden */}
+                            {!showSidebar && entry.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {entry.tags.map(t => <Badge key={t} text={t} />)}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Sidebar Controls - Collapsible & Responsive */}
+                        {showSidebar && (
+                            <div className="w-full lg:w-72 shrink-0 space-y-6 overflow-y-auto pb-10 bg-slate-900/95 lg:bg-transparent absolute lg:static bottom-0 left-0 right-0 z-20 border-t lg:border-t-0 border-slate-700 lg:h-auto h-2/3 shadow-2xl lg:shadow-none p-6 lg:p-0 rounded-t-2xl lg:rounded-none animate-slide-in-bottom lg:animate-none">
+                                <div className="flex justify-between items-center lg:hidden mb-4">
+                                    <h3 className="font-bold text-white">Entry Settings</h3>
+                                    <button onClick={() => setShowSidebar(false)}><i className="ph ph-x text-xl text-slate-400"></i></button>
+                                </div>
+
+                                <div className="glass p-5 rounded-xl space-y-6">
+                                    {/* Compact Energy Slider */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Energy Level</label>
+                                        <div className="relative h-6 flex items-center">
+                                            <input type="range" min="1" max="5" value={entry.energy} onChange={e => setEntry({...entry, energy: parseInt(e.target.value)})} className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer z-10" />
+                                            <div className="absolute w-full flex justify-between text-[10px] text-slate-500 top-4">
+                                                <span>Low</span><span>High</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Tags</label>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {entry.tags.map(t => (
+                                                <span key={t} className="bg-slate-700 text-slate-300 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                    #{t} <button onClick={() => setEntry({...entry, tags: entry.tags.filter(x => x !== t)})}><i className="ph ph-x"></i></button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <input type="text" value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={addTag} placeholder="+ Add tag (Enter)" className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-brand-500 outline-none" />
+                                    </div>
+
+                                    <div className="relative">
+                                        <button onClick={() => setShowLinkMenu(!showLinkMenu)} className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg text-sm flex items-center justify-center gap-2">
+                                            <i className="ph ph-link"></i> Link Item
+                                        </button>
+                                        
+                                        {showLinkMenu && (
+                                            <div className="absolute top-full mt-2 w-full bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto p-2">
+                                                <p className="text-xs font-bold text-slate-500 uppercase px-2 mb-1">Contacts</p>
+                                                {externalData.contacts.map(c => <button key={c.id} onClick={() => addLink('contacts', c.id)} className="w-full text-left px-2 py-1 text-sm text-slate-300 hover:bg-slate-700 rounded truncate">{c.firstName} {c.lastName}</button>)}
+                                                
+                                                <p className="text-xs font-bold text-slate-500 uppercase px-2 mb-1 mt-2">Tasks</p>
+                                                {externalData.tasks.map(t => <button key={t.id} onClick={() => addLink('tasks', t.id)} className="w-full text-left px-2 py-1 text-sm text-slate-300 hover:bg-slate-700 rounded truncate">{t.title}</button>)}
+                                                
+                                                <p className="text-xs font-bold text-slate-500 uppercase px-2 mb-1 mt-2">Places</p>
+                                                {externalData.restaurants.map(r => <button key={r.id} onClick={() => addLink('restaurants', r.id)} className="w-full text-left px-2 py-1 text-sm text-slate-300 hover:bg-slate-700 rounded truncate">{r.name}</button>)}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Link Chips */}
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.keys(entry.links).map(key => 
+                                            entry.links[key].map(id => {
+                                                let label = id;
+                                                if(key === 'contacts') {
+                                                    const c = externalData.contacts.find(c => c.id === id);
+                                                    if(c) label = c.firstName;
+                                                } else if(key === 'tasks') {
+                                                    const t = externalData.tasks.find(t => t.id === id);
+                                                    if(t) label = t.title;
+                                                } else if(key === 'restaurants') {
+                                                    const r = externalData.restaurants.find(r => r.id === id);
+                                                    if(r) label = r.name;
+                                                }
+                                                return (
+                                                    <span key={id} className="bg-indigo-900/30 text-indigo-300 border border-indigo-500/30 px-2 py-1 rounded text-xs flex items-center gap-1">
+                                                        <i className="ph ph-link"></i> {label}
+                                                        <button onClick={() => {
+                                                            const newLinks = {...entry.links};
+                                                            newLinks[key] = newLinks[key].filter(lid => lid !== id);
+                                                            setEntry({...entry, links: newLinks});
+                                                        }} className="hover:text-white ml-1"><i className="ph ph-x"></i></button>
+                                                    </span>
+                                                )
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // D) CALENDAR VIEW
+        const CalendarView = ({ entries, onViewEntry }) => {
+            const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+            const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+            const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            return (
+                <div className="space-y-6 animate-fade-in">
+                    <h2 className="text-2xl font-bold">{currentMonth}</h2>
+                    <div className="grid grid-cols-7 gap-2">
+                        {['S','M','T','W','T','F','S'].map((d, i) => <div key={i} className="text-center text-xs text-slate-500 font-bold py-2">{d}</div>)}
+                        {days.map(day => {
+                            const dateStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const entry = entries.find(e => e.date === dateStr);
+                            return (
+                                <div 
+                                    key={day} 
+                                    onClick={() => entry && onViewEntry(entry)}
+                                    className={`aspect-square rounded-xl border border-slate-800 flex flex-col items-center justify-center relative cursor-pointer hover:border-slate-600 transition-colors ${entry ? 'bg-slate-800' : 'bg-transparent'}`}
+                                >
+                                    <span className={`text-sm ${entry ? 'text-white font-bold' : 'text-slate-600'}`}>{day}</span>
+                                    {entry && <div className={`w-2 h-2 rounded-full mt-1 ${entry.mood > 3 ? 'bg-green-500' : 'bg-blue-500'}`}></div>}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 4. MAIN APP CONTAINER ---
+        const App = () => {
+            const [view, setView] = useState('home'); // home, editor, calendar, timeline
+            const [entries, setEntries] = useState(db.getEntries());
+            const [templates, setTemplates] = useState(db.getTemplates());
+            const [editingEntry, setEditingEntry] = useState(null);
+
+            const handleSaveEntry = (entry) => {
+                const updated = db.saveEntry(entry);
+                setEntries(updated);
+                setView('home');
+                setEditingEntry(null);
+            };
+
+            const handleEditEntry = (entry) => {
+                setEditingEntry(entry);
+                setView('editor');
+            };
+
+            const handleNewEntry = () => {
+                setEditingEntry(null);
+                setView('editor');
+            };
+
+            let content;
+            if (view === 'home') content = <JournalHome entries={entries} onNewEntry={handleNewEntry} onViewEntry={handleEditEntry} />;
+            if (view === 'editor') content = <EntryEditor initialData={editingEntry} onSave={handleSaveEntry} onCancel={() => setView('home')} templates={templates} />;
+            if (view === 'calendar') content = <CalendarView entries={entries} onViewEntry={handleEditEntry} />;
+            if (view === 'timeline') content = <TimelineView entries={entries} onViewEntry={handleEditEntry} />;
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* Sidebar */}
+                    <aside className="w-20 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+                        <div className="p-6 flex items-center gap-3 justify-center md:justify-start">
+                            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold"><i className="ph ph-book-bookmark"></i></div>
+                            <span className="font-bold text-lg hidden md:block">Journal</span>
+                        </div>
+                        <nav className="flex-1 px-2 md:px-4 space-y-2 mt-4">
+                            <button onClick={() => setView('home')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors justify-center md:justify-start ${view === 'home' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                <i className="ph ph-house text-xl"></i> <span className="hidden md:inline">Home</span>
+                            </button>
+                            <button onClick={() => setView('timeline')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors justify-center md:justify-start ${view === 'timeline' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                <i className="ph ph-list-dashes text-xl"></i> <span className="hidden md:inline">Entries</span>
+                            </button>
+                            <button onClick={() => setView('calendar')} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors justify-center md:justify-start ${view === 'calendar' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'}`}>
+                                <i className="ph ph-calendar text-xl"></i> <span className="hidden md:inline">Calendar</span>
+                            </button>
+                            <button onClick={handleNewEntry} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors justify-center md:justify-start text-brand-400 hover:bg-brand-500/10">
+                                <i className="ph ph-plus-circle text-xl"></i> <span className="hidden md:inline">New Entry</span>
+                            </button>
+                        </nav>
+                    </aside>
+
+                    {/* Main */}
+                    <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                        <div className="max-w-5xl mx-auto h-full">
+                            {content}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

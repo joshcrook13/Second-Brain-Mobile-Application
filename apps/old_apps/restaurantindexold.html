@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#151f32', 900: '#0f172a' },
+                        brand: { 500: '#f97316', 600: '#ea580c' },
+                        google: { blue: '#4285F4', red: '#EA4335', yellow: '#FBBC05', green: '#34A853' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        .active-tab { background-color: #f97316; color: white; border-color: #f97316; }
+        .inactive-tab { background-color: #1e293b; color: #94a3b8; border-color: #334155; }
+        .inactive-tab:hover { background-color: #334155; color: white; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- === APP HEADER === -->
+    <header class="flex-none h-16 border-b border-slate-700/50 flex items-center justify-between px-6 bg-slate-850 z-20">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-br from-orange-400 to-red-500 w-8 h-8 rounded-lg flex items-center justify-center">
+                <i class="ph ph-bowl-food text-white text-lg font-bold"></i>
+            </div>
+            <h1 class="text-lg font-bold tracking-tight">Restaurant Journal</h1>
+        </div>
+        <div class="flex gap-3">
+             <button onclick="openWhereToEat()" class="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-full text-xs font-semibold transition-colors border border-slate-600">
+                <i class="ph ph-magic-wand text-brand-500"></i> Where to eat?
+            </button>
+            <button onclick="openAddModal()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg shadow-orange-500/20 flex items-center gap-2 transition-transform active:scale-95">
+                <i class="ph ph-plus"></i> <span class="hidden sm:inline">Add Place</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- === MAIN CONTENT AREA === -->
+    <main class="flex-1 overflow-hidden relative flex">
+        
+        <!-- Sidebar (Desktop Navigation) -->
+        <aside class="hidden md:flex flex-col w-64 border-r border-slate-700/50 bg-slate-850/50">
+            <nav class="flex-1 p-4 space-y-2">
+                <button onclick="showScreen('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="ph ph-chart-pie-slice text-xl"></i> Insights
+                </button>
+                <button onclick="showScreen('directory')" id="nav-directory" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="ph ph-books text-xl"></i> Directory
+                </button>
+                <!-- NEW DISCOVER TAB -->
+                <button onclick="showScreen('discover')" id="nav-discover" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="ph ph-compass text-xl"></i> Discover
+                </button>
+                <button onclick="showScreen('lists')" id="nav-lists" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
+                    <i class="ph ph-list-heart text-xl"></i> Collections
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700/50">
+                <button onclick="clearData()" class="text-xs text-slate-600 hover:text-red-400 flex items-center gap-2">
+                    <i class="ph ph-trash"></i> Reset Data
+                </button>
+            </div>
+        </aside>
+
+        <!-- Screen Container -->
+        <div id="screen-container" class="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth">
+            
+            <!-- SCREEN: DASHBOARD -->
+            <div id="screen-dashboard" class="view-screen space-y-8 max-w-5xl mx-auto">
+                <!-- Welcome & Key Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div onclick="openStatDetail('total')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:bg-slate-800 transition-all border border-transparent hover:border-slate-600">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">Total Places <i class="ph ph-caret-right text-slate-500"></i></p>
+                        <h2 class="text-3xl font-bold" id="stat-total-places">0</h2>
+                    </div>
+                    <div onclick="openStatDetail('visits')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:bg-slate-800 transition-all border border-transparent hover:border-brand-500/30">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">Visits Logged <i class="ph ph-caret-right text-slate-500"></i></p>
+                        <h2 class="text-3xl font-bold text-brand-500" id="stat-total-visits">0</h2>
+                    </div>
+                    <div onclick="openStatDetail('spend')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:bg-slate-800 transition-all border border-transparent hover:border-emerald-500/30">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">Avg Spend <i class="ph ph-caret-right text-slate-500"></i></p>
+                        <h2 class="text-3xl font-bold text-emerald-400" id="stat-avg-spend">£0</h2>
+                    </div>
+                    <div onclick="openStatDetail('to_try')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:bg-slate-800 transition-all border border-transparent hover:border-blue-500/30">
+                        <p class="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">To Try <i class="ph ph-caret-right text-slate-500"></i></p>
+                        <h2 class="text-3xl font-bold text-blue-400" id="stat-to-try">0</h2>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl">
+                        <h3 class="font-bold mb-4 flex items-center gap-2"><i class="ph ph-pizza"></i> Top Cuisines</h3>
+                        <div class="h-48 flex items-center justify-center">
+                            <canvas id="cuisineChart"></canvas>
+                        </div>
+                    </div>
+                     <div class="glass-panel p-6 rounded-2xl">
+                        <h3 class="font-bold mb-4 flex items-center gap-2"><i class="ph ph-wallet"></i> Monthly Spend</h3>
+                         <div class="h-48 flex items-center justify-center">
+                            <canvas id="spendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div>
+                    <h3 class="font-bold text-lg mb-4">Recent Visits</h3>
+                    <div id="dashboard-recent-list" class="space-y-3">
+                        <!-- Injected JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN: DIRECTORY (List/Grid) -->
+            <div id="screen-directory" class="view-screen hidden max-w-5xl mx-auto">
+                
+                <!-- Main Tabs -->
+                <div class="flex items-center justify-center mb-6">
+                    <div class="bg-slate-800 p-1 rounded-xl flex shadow-lg border border-slate-700">
+                        <button onclick="switchDirectoryMode('want_to_try')" id="tab-want-to-try" class="active-tab px-6 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2">
+                            <i class="ph ph-bookmark"></i> Wishlist
+                        </button>
+                        <button onclick="switchDirectoryMode('visited')" id="tab-visited" class="inactive-tab px-6 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2">
+                            <i class="ph ph-check-circle"></i> Visited
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-col md:flex-row gap-4 mb-6 sticky top-0 bg-slate-900/90 py-2 z-10 backdrop-blur-md">
+                    <div class="relative flex-1">
+                        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                        <input type="text" id="search-input" placeholder="Search by name, tag..." 
+                            class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 focus:border-brand-500 focus:outline-none transition-colors shadow-sm">
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                        <!-- Dynamic Cuisine Filter -->
+                        <select id="filter-cuisine" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none shadow-sm cursor-pointer hover:bg-slate-750">
+                            <option value="all">All Cuisines</option>
+                            <!-- Populated via JS -->
+                        </select>
+
+                        <!-- Rating Filter (Hidden in Wishlist Mode) -->
+                        <select id="filter-rating" class="hidden bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none shadow-sm cursor-pointer hover:bg-slate-750">
+                            <option value="all">Any Rating</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="5">5 Stars Only</option>
+                        </select>
+
+                        <select id="filter-price" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none shadow-sm cursor-pointer hover:bg-slate-750">
+                            <option value="all">Any Price</option>
+                            <option value="1">£ Cheap</option>
+                            <option value="2">££ Moderate</option>
+                            <option value="3">£££ Expensive</option>
+                            <option value="4">££££ Splurge</option>
+                        </select>
+                         <button onclick="renderDirectory()" class="p-3 bg-slate-700 rounded-xl hover:bg-slate-600 shadow-sm"><i class="ph ph-arrows-clockwise"></i></button>
+                    </div>
+                </div>
+
+                <!-- The Grid -->
+                <div id="directory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- SCREEN: DISCOVER (NEW) -->
+            <div id="screen-discover" class="view-screen hidden max-w-5xl mx-auto">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 mb-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
+                        <i class="ph ph-globe-hemisphere-west text-9xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-2">Local Gems & Trending Spots</h2>
+                    <p class="text-blue-100 max-w-2xl">Recommendations based on popular places in your area. (Data simulated for demo purposes).</p>
+                    
+                    <div class="mt-6 flex gap-2">
+                        <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">Top Rated</span>
+                        <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">Hidden Gems</span>
+                        <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-medium">New Openings</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="discover-grid">
+                    <!-- Cards injected by renderDiscover() -->
+                </div>
+            </div>
+
+            <!-- SCREEN: DETAIL VIEW -->
+            <div id="screen-detail" class="view-screen hidden max-w-4xl mx-auto">
+                <button onclick="showScreen('directory')" class="mb-4 text-sm text-slate-400 hover:text-white flex items-center gap-2"><i class="ph ph-arrow-left"></i> Back to Directory</button>
+                <div id="detail-content"></div>
+            </div>
+            
+             <!-- SCREEN: LISTS -->
+            <div id="screen-lists" class="view-screen hidden max-w-5xl mx-auto">
+                 <div class="text-center py-20 opacity-50">
+                    <i class="ph ph-kanban text-6xl mb-4"></i>
+                    <h2 class="text-xl font-bold">Collections Coming Soon</h2>
+                    <p>Organize your spots into lists like "Date Night" or "Best Burgers".</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Mobile Nav (Bottom) -->
+    <nav class="md:hidden h-16 bg-slate-850 border-t border-slate-700 flex justify-around items-center px-2 z-20">
+        <button onclick="showScreen('dashboard')" class="p-2 flex flex-col items-center text-slate-400 hover:text-brand-500 nav-mobile-item" id="mob-dashboard">
+            <i class="ph ph-chart-pie-slice text-xl"></i>
+            <span class="text-[10px] mt-1">Insights</span>
+        </button>
+        <button onclick="showScreen('directory')" class="p-2 flex flex-col items-center text-slate-400 hover:text-brand-500 nav-mobile-item" id="mob-directory">
+            <i class="ph ph-books text-xl"></i>
+            <span class="text-[10px] mt-1">Directory</span>
+        </button>
+        <div class="relative -top-6">
+            <button onclick="openAddModal()" class="w-14 h-14 bg-brand-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
+                <i class="ph ph-plus text-2xl"></i>
+            </button>
+        </div>
+        <button onclick="showScreen('discover')" class="p-2 flex flex-col items-center text-slate-400 hover:text-brand-500 nav-mobile-item" id="mob-discover">
+            <i class="ph ph-compass text-xl"></i>
+            <span class="text-[10px] mt-1">Discover</span>
+        </button>
+        <button onclick="showScreen('lists')" class="p-2 flex flex-col items-center text-slate-400 hover:text-brand-500 nav-mobile-item" id="mob-lists">
+            <i class="ph ph-list-heart text-xl"></i>
+            <span class="text-[10px] mt-1">Lists</span>
+        </button>
+    </nav>
+
+    <!-- === MODALS === -->
+
+    <!-- STAT DETAIL MODAL -->
+    <div id="modal-stat-detail" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-2xl">
+                <h3 class="font-bold text-lg" id="stat-modal-title">Breakdown</h3>
+                <button onclick="closeModal('modal-stat-detail')" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="p-0 overflow-y-auto" id="stat-modal-content">
+                <!-- Content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Restaurant Modal -->
+    <div id="modal-add" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Add New Restaurant</h3>
+                <button onclick="closeModal('modal-add')" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <!-- Basic Info (Always Visible) -->
+                <div>
+                    <label class="label">Name</label>
+                    <input type="text" id="add-name" class="input-field" placeholder="Restaurant Name">
+                </div>
+                <div>
+                    <label class="label">Cuisine (Comma separated)</label>
+                    <input type="text" id="add-cuisine" class="input-field" placeholder="Italian, Pizza, Casual">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="label">Price</label>
+                        <select id="add-price" class="input-field">
+                            <option value="1">£ (Cheap)</option>
+                            <option value="2">££ (Moderate)</option>
+                            <option value="3">£££ (Fancy)</option>
+                            <option value="4">££££ (Splurge)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Status</label>
+                        <select id="add-status" class="input-field bg-slate-700 border-brand-500/50">
+                            <option value="want_to_try">Want to Try</option>
+                            <option value="visited">Visited</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="label">Location / Area</label>
+                    <input type="text" id="add-location" class="input-field" placeholder="e.g. Soho, London">
+                </div>
+
+                <!-- Conditional Review Section -->
+                <div id="initial-review-section" class="hidden border-t border-slate-700 pt-4 mt-2 space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="ph ph-star text-brand-500"></i>
+                        <h4 class="font-bold text-sm text-brand-500 uppercase tracking-wide">First Visit Details</h4>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="label">Date Visited</label><input type="date" id="add-visit-date" class="input-field"></div>
+                        <div><label class="label">Spend (£)</label><input type="number" id="add-visit-spend" class="input-field" placeholder="0.00"></div>
+                    </div>
+                    <div>
+                        <label class="label mb-2 block">Ratings (1-5)</label>
+                        <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+                            <div class="flex justify-between items-center"><span>Food</span> <input type="number" id="add-rate-food" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                            <div class="flex justify-between items-center"><span>Service</span> <input type="number" id="add-rate-service" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                            <div class="flex justify-between items-center"><span>Atmosphere</span> <input type="number" id="add-rate-atmosphere" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                            <div class="flex justify-between items-center"><span>Value</span> <input type="number" id="add-rate-value" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                         <div><label class="label">Highlights</label><textarea id="add-highlights" rows="2" class="input-field text-xs" placeholder="Best dishes..."></textarea></div>
+                         <div><label class="label">Lowlights</label><textarea id="add-lowlights" rows="2" class="input-field text-xs" placeholder="Disappointments..."></textarea></div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2">
+                         <input type="checkbox" id="add-would-return" class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-brand-500 focus:ring-brand-500" checked>
+                         <label for="add-would-return" class="text-sm text-slate-300">Would Return?</label>
+                    </div>
+                    <div><label class="label">Private Notes</label><textarea id="add-notes" rows="2" class="input-field" placeholder="Detailed review notes..."></textarea></div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end">
+                <button onclick="saveRestaurant()" class="bg-brand-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-brand-600">Save Restaurant</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Visit Modal (Standard) -->
+    <div id="modal-visit" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Log a Visit</h3>
+                <button onclick="closeModal('modal-visit')" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <input type="hidden" id="visit-restaurant-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="label">Date</label><input type="date" id="visit-date" class="input-field"></div>
+                    <div><label class="label">Total Spend (£)</label><input type="number" id="visit-spend" class="input-field" placeholder="0.00"></div>
+                </div>
+                <div>
+                    <label class="label mb-2 block">Ratings (1-5)</label>
+                    <div class="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+                        <div class="flex justify-between items-center"><span>Food</span> <input type="number" id="rate-food" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                        <div class="flex justify-between items-center"><span>Service</span> <input type="number" id="rate-service" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                        <div class="flex justify-between items-center"><span>Atmosphere</span> <input type="number" id="rate-atmosphere" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                        <div class="flex justify-between items-center"><span>Value</span> <input type="number" id="rate-value" min="1" max="5" class="w-12 bg-slate-700 rounded p-1 text-center" value="4"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                     <div><label class="label">Highlights</label><textarea id="visit-highlights" rows="2" class="input-field text-xs" placeholder="Best dishes..."></textarea></div>
+                     <div><label class="label">Lowlights</label><textarea id="visit-lowlights" rows="2" class="input-field text-xs" placeholder="Disappointments..."></textarea></div>
+                </div>
+                <div class="flex items-center gap-2">
+                     <input type="checkbox" id="visit-would-return" class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-brand-500 focus:ring-brand-500" checked>
+                     <label for="visit-would-return" class="text-sm text-slate-300">Would Return?</label>
+                </div>
+                <div><label class="label">What did you eat?</label><textarea id="visit-order" rows="2" class="input-field" placeholder="Burger, Truffle Fries..."></textarea></div>
+                <div><label class="label">Private Notes</label><textarea id="visit-notes" rows="2" class="input-field" placeholder="Table by the window was great..."></textarea></div>
+            </div>
+            <div class="p-4 border-t border-slate-700 flex justify-end">
+                <button onclick="saveVisit()" class="bg-brand-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-brand-600">Save Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- "Where Should I Eat" Wizard -->
+    <div id="modal-wizard" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-md text-center space-y-6" id="wizard-content">
+            <div id="wizard-step-1">
+                <i class="ph ph-magic-wand text-5xl text-brand-500 mb-4 animate-pulse"></i>
+                <h2 class="text-2xl font-bold mb-2">Let's find a spot.</h2>
+                <p class="text-slate-400 mb-8">What is the vibe today?</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="runWizard('want_to_try')" class="p-4 bg-slate-800 rounded-xl border border-slate-700 hover:border-brand-500 hover:bg-slate-700 transition-all">
+                        <div class="text-3xl mb-2">🚀</div>
+                        <div class="font-bold">Something New</div>
+                    </button>
+                    <button onclick="runWizard('visited')" class="p-4 bg-slate-800 rounded-xl border border-slate-700 hover:border-brand-500 hover:bg-slate-700 transition-all">
+                        <div class="text-3xl mb-2">❤️</div>
+                        <div class="font-bold">Tried & True</div>
+                    </button>
+                </div>
+                <button onclick="closeModal('modal-wizard')" class="mt-8 text-slate-500 hover:text-white">Cancel</button>
+            </div>
+            <div id="wizard-result" class="hidden">
+                 <div class="text-sm text-brand-500 uppercase tracking-widest font-bold mb-4">The Universe Suggests</div>
+                 <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl relative overflow-hidden group cursor-pointer" onclick="goToSuggested()">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-red-500"></div>
+                    <h2 class="text-3xl font-bold mb-2" id="wizard-name">Restaurant Name</h2>
+                    <p class="text-slate-400 mb-4" id="wizard-meta">Italian • Soho • ££</p>
+                    <div class="inline-block px-4 py-1 bg-slate-700 rounded-full text-sm" id="wizard-reason">Match: 95%</div>
+                 </div>
+                 <div class="flex gap-4 justify-center mt-8">
+                     <button onclick="runWizard('any')" class="text-slate-400 hover:text-white flex items-center gap-2"><i class="ph ph-arrows-clockwise"></i> Spin Again</button>
+                     <button onclick="closeModal('modal-wizard')" class="text-slate-400 hover:text-white">Close</button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Styles for Input Fields -->
+    <style>
+        .label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #94a3b8; margin-bottom: 0.25rem; }
+        .input-field { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 0.5rem; padding: 0.5rem 1rem; color: white; transition: 0.2s; }
+        .input-field:focus { border-color: #f97316; outline: none; }
+    </style>
+
+    <!-- === LOGIC === -->
+    <script>
+        // --- DATA MODEL ---
+        const initialRestaurants = [
+            { id: 'r1', name: "Dishoom", cuisine: ["Indian", "Bombay"], price: 2, location: "Shoreditch", status: "visited", created: Date.now() },
+            { id: 'r2', name: "Gloria", cuisine: ["Italian", "Pasta"], price: 3, location: "Shoreditch", status: "visited", created: Date.now() },
+            { id: 'r3', name: "Sketch", cuisine: ["Modern European", "Tea"], price: 4, location: "Mayfair", status: "want_to_try", created: Date.now() }
+        ];
+
+        const initialVisits = [
+            { id: 'v1', restId: 'r1', date: '2023-10-15', spend: 45, ratings: { food: 5, service: 4, atmosphere: 5, value: 4 }, highlights: "Black Daal", notes: "Black daal is legendary." },
+            { id: 'v2', restId: 'r2', date: '2023-11-02', spend: 80, ratings: { food: 4, service: 3, atmosphere: 5, value: 3 }, notes: "Great vibe, pasta was okay." }
+        ];
+
+        // MOCK GOOGLE DATA (Simulation)
+        const mockRecommendations = [
+            { id: 'g1', name: "Padella", cuisine: ["Italian", "Pasta"], price: 2, location: "Borough Market", rating: 4.8, reviewCount: "4.2k", snippet: "Simply the best fresh pasta in London. The Cacio e Pepe is a must-try. Expect a queue!", imageColor: "bg-yellow-500" },
+            { id: 'g2', name: "Bao", cuisine: ["Taiwanese", "Street Food"], price: 2, location: "Soho", rating: 4.6, reviewCount: "2.8k", snippet: "Fluffy buns filled with deliciousness. The classic pork belly bao is perfection.", imageColor: "bg-red-500" },
+            { id: 'g3', name: "Hawksmoor", cuisine: ["Steakhouse"], price: 4, location: "Spitalfields", rating: 4.7, reviewCount: "3.5k", snippet: "Best steak in the UK? Quite possibly. Service is impeccable and the cocktails are dangerous.", imageColor: "bg-slate-700" },
+            { id: 'g4', name: "Roti King", cuisine: ["Malaysian"], price: 1, location: "Euston", rating: 4.5, reviewCount: "5.1k", snippet: "Authentic, affordable, and incredibly tasty roti canai. Hidden basement gem.", imageColor: "bg-orange-500" }
+        ];
+
+        let appData = {
+            restaurants: JSON.parse(localStorage.getItem('journal_restaurants')) || initialRestaurants,
+            visits: JSON.parse(localStorage.getItem('journal_visits')) || initialVisits
+        };
+
+        let directoryMode = 'want_to_try'; // 'want_to_try' or 'visited'
+
+        // --- NAVIGATION ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.view-screen').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-brand-500', 'text-white');
+                el.classList.add('text-slate-400');
+            });
+            try {
+                const navBtn = document.getElementById(`nav-${screenId}`);
+                if(navBtn) {
+                     navBtn.classList.add('bg-brand-500', 'text-white');
+                     navBtn.classList.remove('text-slate-400', 'hover:bg-slate-800');
+                }
+            } catch(e){}
+
+            if(screenId === 'dashboard') renderDashboard();
+            if(screenId === 'directory') renderDirectory();
+            if(screenId === 'discover') renderDiscover();
+        }
+
+        // --- STAT DRILL-DOWN LOGIC (NEW) ---
+        function openStatDetail(type) {
+            const modal = document.getElementById('modal-stat-detail');
+            const title = document.getElementById('stat-modal-title');
+            const content = document.getElementById('stat-modal-content');
+            
+            let html = '';
+            
+            if (type === 'total') {
+                title.innerText = 'All Restaurants';
+                const all = appData.restaurants.sort((a,b) => a.name.localeCompare(b.name));
+                html = renderListGroup(all, 'All Places');
+            } else if (type === 'visits') {
+                title.innerText = 'Visit Log';
+                const visits = appData.visits.sort((a,b) => new Date(b.date) - new Date(a.date));
+                html = visits.map(v => {
+                    const r = appData.restaurants.find(x => x.id === v.restId);
+                    return `
+                        <div onclick="closeModal('modal-stat-detail'); openDetail('${r ? r.id : ''}')" class="p-4 border-b border-slate-700 hover:bg-slate-700 cursor-pointer transition-colors flex justify-between items-center group">
+                            <div>
+                                <h4 class="font-bold text-white group-hover:text-brand-500">${r ? r.name : 'Unknown'}</h4>
+                                <p class="text-xs text-slate-400">${new Date(v.date).toLocaleDateString()}</p>
+                            </div>
+                             <div class="text-right">
+                                <span class="text-brand-500 font-bold block">${((v.ratings.food+v.ratings.service+v.ratings.atmosphere+v.ratings.value)/4).toFixed(1)} <i class="ph ph-star-fill text-xs"></i></span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                if(visits.length === 0) html = '<div class="p-8 text-center text-slate-500">No visits logged yet.</div>';
+            } else if (type === 'spend') {
+                title.innerText = 'Spending History';
+                const visits = appData.visits.filter(v => v.spend > 0).sort((a,b) => new Date(b.date) - new Date(a.date));
+                html = visits.map(v => {
+                    const r = appData.restaurants.find(x => x.id === v.restId);
+                    return `
+                        <div onclick="closeModal('modal-stat-detail'); openDetail('${r ? r.id : ''}')" class="p-4 border-b border-slate-700 hover:bg-slate-700 cursor-pointer transition-colors flex justify-between items-center group">
+                            <div>
+                                <h4 class="font-bold text-white group-hover:text-emerald-400">${r ? r.name : 'Unknown'}</h4>
+                                <p class="text-xs text-slate-400">${new Date(v.date).toLocaleDateString()}</p>
+                            </div>
+                             <div class="text-right font-mono text-emerald-400 font-bold">
+                                £${v.spend}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                if(visits.length === 0) html = '<div class="p-8 text-center text-slate-500">No spending data recorded.</div>';
+            } else if (type === 'to_try') {
+                title.innerText = 'Wishlist';
+                const list = appData.restaurants.filter(r => r.status === 'want_to_try');
+                html = renderListGroup(list, 'To Try');
+            }
+
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function renderListGroup(list, emptyMsg) {
+             if (list.length === 0) return `<div class="p-8 text-center text-slate-500">No items found.</div>`;
+             return list.map(r => `
+                <div onclick="closeModal('modal-stat-detail'); openDetail('${r.id}')" class="p-4 border-b border-slate-700 hover:bg-slate-700 cursor-pointer transition-colors flex justify-between items-center group">
+                    <div class="flex items-center gap-3">
+                         <div class="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-lg shadow-sm">
+                            ${getCuisineIcon(r.cuisine[0])}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white group-hover:text-brand-500">${r.name}</h4>
+                            <p class="text-xs text-slate-400">${r.cuisine.join(', ')}</p>
+                        </div>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-500 group-hover:text-white"></i>
+                </div>
+            `).join('');
+        }
+
+        // --- DISCOVER LOGIC (NEW) ---
+        function renderDiscover() {
+            const grid = document.getElementById('discover-grid');
+            
+            // Filter out places we already have
+            const existingNames = appData.restaurants.map(r => r.name.toLowerCase());
+            const freshRecommendations = mockRecommendations.filter(r => !existingNames.includes(r.name.toLowerCase()));
+
+            if (freshRecommendations.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-20 opacity-50"><p>You've added all our top recommendations!</p></div>`;
+                return;
+            }
+
+            grid.innerHTML = freshRecommendations.map(r => `
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-blue-500 transition-colors flex flex-col gap-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg text-white">${r.name}</h3>
+                            <p class="text-xs text-slate-400">${r.cuisine[0]} • ${r.location} • ${'£'.repeat(r.price)}</p>
+                        </div>
+                        <div class="flex items-center gap-1 bg-white text-slate-900 px-2 py-1 rounded text-xs font-bold">
+                            <span>${r.rating}</span> <i class="ph ph-star-fill text-yellow-500"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900/50 p-3 rounded-lg text-sm text-slate-300 italic relative">
+                        <i class="ph ph-quotes text-slate-600 absolute -top-2 -left-1 text-xl"></i>
+                        "${r.snippet}"
+                        <div class="text-right text-[10px] text-slate-500 mt-1 not-italic">Based on Google Reviews (${r.reviewCount})</div>
+                    </div>
+
+                    <button onclick="addRecommendation('${r.id}')" class="mt-auto w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-colors">
+                        <i class="ph ph-plus-circle"></i> Add to Want to Try
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addRecommendation(recId) {
+            const rec = mockRecommendations.find(r => r.id === recId);
+            if (!rec) return;
+
+            // Pre-fill modal or just add directly? Let's add directly for speed.
+            const newR = { 
+                id: 'r' + Date.now(), 
+                name: rec.name, 
+                cuisine: rec.cuisine, 
+                price: rec.price, 
+                status: 'want_to_try', 
+                location: rec.location, 
+                created: Date.now() 
+            };
+            
+            appData.restaurants.push(newR);
+            saveData();
+            
+            // Feedback
+            alert(`${rec.name} added to your Wishlist!`);
+            renderDiscover(); // Refresh list to remove added item
+        }
+
+        // --- DASHBOARD LOGIC ---
+        function renderDashboard() {
+            const { restaurants, visits } = appData;
+            document.getElementById('stat-total-places').textContent = restaurants.length;
+            document.getElementById('stat-total-visits').textContent = visits.length;
+            document.getElementById('stat-to-try').textContent = restaurants.filter(r => r.status === 'want_to_try').length;
+            
+            const totalSpend = visits.reduce((sum, v) => sum + Number(v.spend), 0);
+            const avgSpend = visits.length ? (totalSpend / visits.length).toFixed(0) : 0;
+            document.getElementById('stat-avg-spend').textContent = `£${avgSpend}`;
+
+            const recentEl = document.getElementById('dashboard-recent-list');
+            const sortedVisits = [...visits].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+            
+            recentEl.innerHTML = sortedVisits.map(v => {
+                const r = restaurants.find(r => r.id === v.restId);
+                if(!r) return '';
+                return `
+                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-xl">
+                                ${getCuisineIcon(r.cuisine[0])}
+                            </div>
+                            <div>
+                                <h4 class="font-bold">${r.name}</h4>
+                                <p class="text-xs text-slate-400">${new Date(v.date).toLocaleDateString()} • £${v.spend}</p>
+                            </div>
+                        </div>
+                        <div class="text-brand-500 font-bold flex items-center gap-1">
+                            <i class="ph ph-star-fill"></i> ${(v.ratings.food + v.ratings.service + v.ratings.atmosphere + v.ratings.value)/4}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            renderCharts();
+        }
+
+        function renderCharts() {
+            const cuisineCounts = {};
+            appData.restaurants.forEach(r => {
+                r.cuisine.forEach(c => {
+                    let clean = c.trim();
+                    cuisineCounts[clean] = (cuisineCounts[clean] || 0) + 1;
+                });
+            });
+            const topCuisines = Object.entries(cuisineCounts).sort((a,b) => b[1] - a[1]).slice(0,5);
+            
+            let chartStatus = Chart.getChart("cuisineChart");
+            if (chartStatus != undefined) chartStatus.destroy();
+
+            new Chart(document.getElementById('cuisineChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: topCuisines.map(c => c[0]),
+                    datasets: [{
+                        data: topCuisines.map(c => c[1]),
+                        backgroundColor: ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#fff7ed'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { plugins: { legend: { display: false } }, cutout: '70%' }
+            });
+
+             let spendStatus = Chart.getChart("spendChart");
+            if (spendStatus != undefined) spendStatus.destroy();
+
+            new Chart(document.getElementById('spendChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+                    datasets: [{
+                        label: 'Spend',
+                        data: [120, 190, 80, 250],
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: { scales: { y: { display: false }, x: { grid: {display: false} } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // --- DIRECTORY LOGIC ---
+        
+        function switchDirectoryMode(mode) {
+            directoryMode = mode;
+            // Update UI
+            const wishBtn = document.getElementById('tab-want-to-try');
+            const visitedBtn = document.getElementById('tab-visited');
+            const ratingFilter = document.getElementById('filter-rating');
+            
+            if (mode === 'want_to_try') {
+                wishBtn.classList.replace('inactive-tab', 'active-tab');
+                visitedBtn.classList.replace('active-tab', 'inactive-tab');
+                ratingFilter.classList.add('hidden'); // Hide rating filter
+            } else {
+                visitedBtn.classList.replace('inactive-tab', 'active-tab');
+                wishBtn.classList.replace('active-tab', 'inactive-tab');
+                ratingFilter.classList.remove('hidden'); // Show rating filter
+            }
+            renderDirectory();
+        }
+
+        function getUniqueCuisines() {
+            const cuisines = new Set();
+            appData.restaurants.forEach(r => {
+                if (r.cuisine) r.cuisine.forEach(c => cuisines.add(c));
+            });
+            return Array.from(cuisines).sort();
+        }
+
+        function populateCuisineFilter() {
+            const select = document.getElementById('filter-cuisine');
+            const currentVal = select.value;
+            const cuisines = getUniqueCuisines();
+            
+            let html = '<option value="all">All Cuisines</option>';
+            cuisines.forEach(c => {
+                html += `<option value="${c}">${c}</option>`;
+            });
+            select.innerHTML = html;
+            select.value = currentVal; // Maintain selection if mostly same
+        }
+
+        function renderDirectory() {
+            populateCuisineFilter(); // Ensure dropdown is up to date
+            const grid = document.getElementById('directory-grid');
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const cuisineFilter = document.getElementById('filter-cuisine').value;
+            const priceFilter = document.getElementById('filter-price').value;
+            const ratingFilter = document.getElementById('filter-rating').value;
+
+            // Filter
+            const filtered = appData.restaurants.filter(r => {
+                // 1. Status Filter (Tab based)
+                // Treat 'favourite' as 'visited' for the visited tab, otherwise explicit match
+                let matchesStatus = false;
+                if (directoryMode === 'visited') {
+                    matchesStatus = (r.status === 'visited' || r.status === 'favourite');
+                } else {
+                    matchesStatus = r.status === 'want_to_try';
+                }
+
+                // 2. Search Filter
+                const matchesTerm = r.name.toLowerCase().includes(term) || r.cuisine.some(c => c.toLowerCase().includes(term));
+                
+                // 3. Cuisine Filter
+                const matchesCuisine = cuisineFilter === 'all' || r.cuisine.some(c => c === cuisineFilter);
+
+                // 4. Price Filter
+                const matchesPrice = priceFilter === 'all' || r.price == priceFilter;
+
+                // 5. Rating Filter (Only for visited items)
+                let matchesRating = true;
+                if (directoryMode === 'visited' && ratingFilter !== 'all') {
+                    const rVisits = appData.visits.filter(v => v.restId === r.id);
+                    if (rVisits.length > 0) {
+                        const totalRating = rVisits.reduce((acc, v) => {
+                            const avg = (v.ratings.food + v.ratings.service + v.ratings.atmosphere + v.ratings.value) / 4;
+                            return acc + avg;
+                        }, 0);
+                        const avgRating = totalRating / rVisits.length;
+                        
+                        if (ratingFilter === '4') matchesRating = avgRating >= 4;
+                        if (ratingFilter === '5') matchesRating = avgRating >= 4.8; // Approx 5
+                    } else {
+                        matchesRating = false; // No rating means it doesn't match a rating filter
+                    }
+                }
+
+                return matchesStatus && matchesTerm && matchesCuisine && matchesPrice && matchesRating;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-20 opacity-50"><p>No places found in ${directoryMode === 'want_to_try' ? 'Wishlist' : 'Visited'}.</p></div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(r => {
+                const visitCount = appData.visits.filter(v => v.restId === r.id).length;
+                // Calculate quick rating for card
+                let ratingHtml = '';
+                if (visitCount > 0) {
+                    const rVisits = appData.visits.filter(v => v.restId === r.id);
+                    const totalRating = rVisits.reduce((acc, v) => acc + ((v.ratings.food + v.ratings.service + v.ratings.atmosphere + v.ratings.value)/4), 0);
+                    const avg = (totalRating / visitCount).toFixed(1);
+                    ratingHtml = `<span class="flex items-center gap-1 text-orange-400 font-bold bg-slate-900/50 px-2 py-1 rounded ml-auto"><i class="ph ph-star-fill"></i> ${avg}</span>`;
+                }
+
+                return `
+                <div onclick="openDetail('${r.id}')" class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden hover:border-brand-500 transition-all cursor-pointer group relative flex flex-col">
+                    <div class="h-24 bg-gradient-to-r from-slate-700 to-slate-800 relative">
+                        <!-- Removed Status Badge since Tabs imply status -->
+                    </div>
+                    <div class="p-5 pt-0 relative flex-1 flex flex-col">
+                        <div class="w-12 h-12 -mt-6 bg-slate-700 border-4 border-slate-800 rounded-xl flex items-center justify-center text-2xl mb-3 shadow-lg">
+                            ${getCuisineIcon(r.cuisine[0])}
+                        </div>
+                        <div class="flex items-start justify-between mb-1">
+                            <h3 class="font-bold text-lg leading-tight group-hover:text-brand-500 transition-colors">${r.name}</h3>
+                            ${ratingHtml}
+                        </div>
+                        <p class="text-sm text-slate-400 mb-4">${r.location} • ${'£'.repeat(r.price)}</p>
+                        
+                        <div class="mt-auto flex items-center gap-2 text-xs font-medium text-slate-500">
+                            <span class="bg-slate-700 px-2 py-1 rounded">${r.cuisine[0]}</span>
+                            ${visitCount > 0 ? `<span class="flex items-center gap-1 text-orange-400"><i class="ph ph-check-circle"></i> ${visitCount} visits</span>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- DETAIL VIEW ---
+        function openDetail(id) {
+            const r = appData.restaurants.find(x => x.id === id);
+            const rVisits = appData.visits.filter(v => v.restId === id).sort((a,b) => new Date(b.date) - new Date(a.date));
+            
+            let avgRatings = { food: 0, service: 0, atmosphere: 0, value: 0, overall: 0 };
+            if(rVisits.length > 0) {
+                rVisits.forEach(v => {
+                    avgRatings.food += Number(v.ratings.food);
+                    avgRatings.service += Number(v.ratings.service);
+                    avgRatings.atmosphere += Number(v.ratings.atmosphere);
+                    avgRatings.value += Number(v.ratings.value);
+                });
+                const count = rVisits.length;
+                avgRatings.food = (avgRatings.food / count).toFixed(1);
+                avgRatings.service = (avgRatings.service / count).toFixed(1);
+                avgRatings.atmosphere = (avgRatings.atmosphere / count).toFixed(1);
+                avgRatings.value = (avgRatings.value / count).toFixed(1);
+                avgRatings.overall = ((Number(avgRatings.food)+Number(avgRatings.service)+Number(avgRatings.atmosphere)+Number(avgRatings.value))/4).toFixed(1);
+            }
+
+            const content = `
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Left: Info -->
+                    <div class="w-full md:w-1/3 space-y-6">
+                        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                            <h1 class="text-3xl font-bold mb-2">${r.name}</h1>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                ${r.cuisine.map(c => `<span class="px-2 py-1 bg-slate-700 rounded text-xs text-slate-300">${c}</span>`).join('')}
+                            </div>
+                            <div class="space-y-3 text-sm text-slate-300">
+                                <p><i class="ph ph-map-pin text-brand-500 mr-2"></i> ${r.location}</p>
+                                <p><i class="ph ph-currency-gbp text-brand-500 mr-2"></i> ${'£'.repeat(r.price)}</p>
+                                <p class="uppercase font-bold text-xs tracking-wider text-slate-500 mt-4">Status</p>
+                                <div class="inline-block px-3 py-1 rounded bg-slate-700 text-xs font-bold ${getStatusColor(r.status)}">${r.status.replace(/_/g, ' ')}</div>
+                            </div>
+                            <button onclick="openVisitModal('${r.id}')" class="w-full mt-6 bg-brand-500 text-white py-3 rounded-xl font-bold hover:bg-brand-600 transition-colors">
+                                Log Visit
+                            </button>
+                        </div>
+
+                        ${rVisits.length > 0 ? `
+                        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                            <div class="text-center mb-4">
+                                <div class="text-4xl font-bold text-white mb-1">${avgRatings.overall}</div>
+                                <div class="flex justify-center text-orange-400 text-sm gap-1">
+                                    ${renderStars(Math.round(avgRatings.overall))}
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">Based on ${rVisits.length} visits</p>
+                            </div>
+                            <div class="space-y-2 text-xs">
+                                <div class="flex justify-between"><span>Food</span> <div class="w-24 bg-slate-700 rounded-full h-2 overflow-hidden"><div class="bg-orange-500 h-full" style="width:${(avgRatings.food/5)*100}%"></div></div> <span class="w-4 text-right">${avgRatings.food}</span></div>
+                                <div class="flex justify-between"><span>Service</span> <div class="w-24 bg-slate-700 rounded-full h-2 overflow-hidden"><div class="bg-blue-500 h-full" style="width:${(avgRatings.service/5)*100}%"></div></div> <span class="w-4 text-right">${avgRatings.service}</span></div>
+                                <div class="flex justify-between"><span>Vibe</span> <div class="w-24 bg-slate-700 rounded-full h-2 overflow-hidden"><div class="bg-purple-500 h-full" style="width:${(avgRatings.atmosphere/5)*100}%"></div></div> <span class="w-4 text-right">${avgRatings.atmosphere}</span></div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Right: History -->
+                    <div class="flex-1">
+                        <h3 class="font-bold text-xl mb-4">Visit History</h3>
+                        ${rVisits.length === 0 ? 
+                            `<div class="text-center py-12 border border-dashed border-slate-700 rounded-2xl text-slate-500">No visits logged yet. Go eat!</div>` : 
+                            `<div class="space-y-4">
+                                ${rVisits.map(v => `
+                                    <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 relative">
+                                        <div class="absolute top-5 right-5 font-mono text-sm text-slate-500">£${v.spend}</div>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="text-brand-500 font-bold text-lg">${((v.ratings.food+v.ratings.service+v.ratings.atmosphere+v.ratings.value)/4).toFixed(1)}</span>
+                                            <span class="text-sm text-slate-400">• ${new Date(v.date).toLocaleDateString()}</span>
+                                            ${v.wouldReturn ? '<span class="ml-2 text-xs text-green-400 border border-green-500/30 px-2 py-0.5 rounded">Would Return</span>' : ''}
+                                        </div>
+                                        <div class="text-sm text-slate-300 italic mb-3">"${v.notes}"</div>
+                                        
+                                        <div class="grid grid-cols-2 gap-2">
+                                            ${v.highlights ? `<div class="bg-slate-900/50 p-3 rounded-lg text-xs text-slate-400"><span class="font-bold text-green-500 block mb-1">Highlights</span> ${v.highlights}</div>` : ''}
+                                            ${v.lowlights ? `<div class="bg-slate-900/50 p-3 rounded-lg text-xs text-slate-400"><span class="font-bold text-red-500 block mb-1">Lowlights</span> ${v.lowlights}</div>` : ''}
+                                        </div>
+                                        ${v.order ? `<div class="mt-2 text-xs text-slate-500"><span class="font-bold">Order:</span> ${v.order}</div>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>`
+                        }
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detail-content').innerHTML = content;
+            showScreen('detail');
+        }
+
+        // --- WIZARD & CRUD ---
+        let wizardResultId = null;
+        function openWhereToEat() {
+            document.getElementById('modal-wizard').classList.remove('hidden');
+            document.getElementById('wizard-step-1').classList.remove('hidden');
+            document.getElementById('wizard-result').classList.add('hidden');
+        }
+
+        function runWizard(mode) {
+            let pool = appData.restaurants;
+            if (mode === 'want_to_try') pool = pool.filter(r => r.status === 'want_to_try');
+            if (mode === 'favourite') pool = pool.filter(r => r.status === 'favourite');
+            if (pool.length === 0) pool = appData.restaurants;
+
+            const randomPick = pool[Math.floor(Math.random() * pool.length)];
+            if(!randomPick) return alert("Add some restaurants first!");
+
+            wizardResultId = randomPick.id;
+            document.getElementById('wizard-step-1').classList.add('hidden');
+            document.getElementById('wizard-result').classList.remove('hidden');
+            document.getElementById('wizard-name').innerText = randomPick.name;
+            document.getElementById('wizard-meta').innerText = `${randomPick.cuisine[0]} • ${randomPick.location} • ${'£'.repeat(randomPick.price)}`;
+            document.getElementById('wizard-reason').innerText = mode === 'want_to_try' ? "Top of your Wishlist" : "Highly Rated by You";
+        }
+
+        function goToSuggested() {
+            closeModal('modal-wizard');
+            openDetail(wizardResultId);
+        }
+
+        function openAddModal() { 
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-cuisine').value = '';
+            document.getElementById('add-location').value = '';
+            document.getElementById('add-status').value = 'want_to_try';
+            const event = new Event('change');
+            document.getElementById('add-status').dispatchEvent(event);
+            document.getElementById('modal-add').classList.remove('hidden'); 
+        }
+
+        function openVisitModal(id) { 
+            document.getElementById('visit-restaurant-id').value = id;
+            document.getElementById('visit-date').valueAsDate = new Date();
+            document.getElementById('modal-visit').classList.remove('hidden'); 
+        }
+
+        document.getElementById('add-status').addEventListener('change', function(e) {
+            const reviewSection = document.getElementById('initial-review-section');
+            if (e.target.value === 'visited' || e.target.value === 'favourite') {
+                reviewSection.classList.remove('hidden');
+                document.getElementById('add-visit-date').valueAsDate = new Date();
+            } else {
+                reviewSection.classList.add('hidden');
+            }
+        });
+
+        function saveRestaurant() {
+            const name = document.getElementById('add-name').value;
+            const cuisine = document.getElementById('add-cuisine').value.split(',').map(s => s.trim());
+            const price = document.getElementById('add-price').value;
+            const status = document.getElementById('add-status').value;
+            const location = document.getElementById('add-location').value;
+
+            if(!name) return alert("Name is required");
+
+            const restId = 'r' + Date.now();
+            const newR = { id: restId, name, cuisine, price, status, location, created: Date.now() };
+            appData.restaurants.push(newR);
+
+            if (status !== 'want_to_try') {
+                const date = document.getElementById('add-visit-date').value || new Date().toISOString().split('T')[0];
+                const spend = document.getElementById('add-visit-spend').value;
+                const notes = document.getElementById('add-notes').value;
+                const highlights = document.getElementById('add-highlights').value;
+                const lowlights = document.getElementById('add-lowlights').value;
+                const wouldReturn = document.getElementById('add-would-return').checked;
+                
+                const ratings = {
+                    food: Number(document.getElementById('add-rate-food').value),
+                    service: Number(document.getElementById('add-rate-service').value),
+                    atmosphere: Number(document.getElementById('add-rate-atmosphere').value),
+                    value: Number(document.getElementById('add-rate-value').value)
+                };
+
+                const newV = { 
+                    id: 'v' + Date.now(), 
+                    restId: restId, 
+                    date, spend, notes, highlights, lowlights, wouldReturn, ratings 
+                };
+                appData.visits.push(newV);
+            }
+
+            saveData();
+            closeModal('modal-add');
+            showScreen('directory');
+        }
+
+        function saveVisit() {
+            const restId = document.getElementById('visit-restaurant-id').value;
+            const date = document.getElementById('visit-date').value;
+            const spend = document.getElementById('visit-spend').value;
+            const order = document.getElementById('visit-order').value;
+            const notes = document.getElementById('visit-notes').value;
+            const highlights = document.getElementById('visit-highlights').value;
+            const lowlights = document.getElementById('visit-lowlights').value;
+            const wouldReturn = document.getElementById('visit-would-return').checked;
+            
+            const ratings = {
+                food: Number(document.getElementById('rate-food').value),
+                service: Number(document.getElementById('rate-service').value),
+                atmosphere: Number(document.getElementById('rate-atmosphere').value),
+                value: Number(document.getElementById('rate-value').value)
+            };
+
+            const newV = { id: 'v'+Date.now(), restId, date, spend, order, notes, highlights, lowlights, wouldReturn, ratings };
+            appData.visits.push(newV);
+            
+            const rIndex = appData.restaurants.findIndex(r => r.id === restId);
+            if(appData.restaurants[rIndex].status === 'want_to_try') {
+                appData.restaurants[rIndex].status = 'visited';
+            }
+
+            saveData();
+            closeModal('modal-visit');
+            openDetail(restId);
+        }
+
+        // --- UTILS ---
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function saveData() {
+            localStorage.setItem('journal_restaurants', JSON.stringify(appData.restaurants));
+            localStorage.setItem('journal_visits', JSON.stringify(appData.visits));
+        }
+        function clearData() {
+            if(confirm("Delete all data?")) {
+                localStorage.removeItem('journal_restaurants');
+                localStorage.removeItem('journal_visits');
+                location.reload();
+            }
+        }
+        function getStatusColor(s) {
+            if(s === 'favourite') return 'text-red-400';
+            if(s === 'visited') return 'text-green-400';
+            return 'text-blue-400';
+        }
+        function getCuisineIcon(c) {
+            c = c.toLowerCase();
+            if(c.includes('pizza') || c.includes('italian')) return '🍕';
+            if(c.includes('burger')) return '🍔';
+            if(c.includes('sushi') || c.includes('japanese')) return '🍣';
+            if(c.includes('coffee')) return '☕';
+            if(c.includes('bar') || c.includes('pub')) return '🍺';
+            if(c.includes('indian') || c.includes('curry')) return '🍛';
+            return '🍽️';
+        }
+        function renderStars(n) { return Array(5).fill(0).map((_, i) => `<i class="ph ${i < n ? 'ph-star-fill' : 'ph-star'}"></i>`).join(''); }
+
+        // INIT
+        renderDashboard();
+
+        // Listen for search
+        document.getElementById('search-input').addEventListener('keyup', renderDirectory);
+        // document.getElementById('filter-status').addEventListener('change', renderDirectory); // REMOVE THIS
+        
+        // ADD THESE:
+        document.getElementById('filter-cuisine').addEventListener('change', renderDirectory);
+        document.getElementById('filter-rating').addEventListener('change', renderDirectory);
+        
+        document.getElementById('filter-price').addEventListener('change', renderDirectory);
+
+    </script>
+</body>
+</html>

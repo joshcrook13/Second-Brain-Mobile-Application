@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gourmet Tracker</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#151f32', 900: '#0f172a' },
+                        brand: { 500: '#da3743', 600: '#b91c1c' }, // OpenTable Red
+                        gold: { 400: '#fbbf24', 500: '#f59e0b' }   // Visited Gold
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        /* Interactive Elements */
+        .rest-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .rest-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px -10px rgba(218, 55, 67, 0.3); }
+        
+        .mode-btn { background-color: rgba(255,255,255,0.05); color: #94a3b8; transition: all 0.2s; }
+        .mode-btn.active { background-color: white; color: #0f172a; font-weight: 600; box-shadow: 0 4px 12px rgba(255,255,255,0.2); }
+        
+        /* Map Pins */
+        .custom-pin { display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4); transition: transform 0.2s; }
+        .custom-pin:hover { transform: scale(1.2); z-index: 9999 !important; }
+        .pin-visited { background-color: #f59e0b; color: white; } /* Gold */
+        .pin-suggest { background-color: #da3743; color: white; } /* Red */
+        
+        /* Map Popup */
+        .leaflet-popup-content-wrapper { background: #1e293b; color: white; border-radius: 8px; padding: 0; overflow: hidden; border: 1px solid #334155; }
+        .leaflet-popup-tip { background: #1e293b; border: 1px solid #334155; }
+        .leaflet-popup-content { margin: 0; width: 220px !important; }
+        
+        /* Tooltip */
+        .custom-tooltip { background-color: rgba(15, 23, 42, 0.9); border: 1px solid #334155; color: white; border-radius: 4px; padding: 4px 8px; font-size: 12px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .leaflet-tooltip-top:before { border-top-color: rgba(15, 23, 42, 0.9); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <header class="h-16 border-b border-slate-800 bg-slate-900/95 backdrop-blur flex items-center justify-between px-4 md:px-8 z-50 shrink-0">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="goHome()">
+            <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white"><i class="ph ph-bowl-food text-xl"></i></div>
+            <h1 class="font-bold text-lg tracking-tight hidden md:block">Gourmet<span class="text-brand-500">Tracker</span></h1>
+        </div>
+        
+        <div class="flex items-center gap-1 bg-slate-800 p-1 rounded-full border border-slate-700">
+            <button onclick="changeView('discover')" id="nav-discover" class="px-4 py-1.5 rounded-full text-xs font-medium text-white bg-slate-700 transition-colors">Discover</button>
+            <button onclick="changeView('map')" id="nav-map" class="px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition-colors">Map</button>
+            <button onclick="changeView('visited-list')" id="nav-visited" class="px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition-colors">History</button>
+        </div>
+
+        <button onclick="openAddModal()" class="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-brand-900/20 transition-transform active:scale-95 flex items-center gap-2">
+            <i class="ph ph-plus"></i> <span class="hidden sm:inline">Log Visit</span>
+        </button>
+    </header>
+
+    <main class="flex-1 overflow-hidden relative" id="main-content">
+        
+        <div id="toast" class="absolute top-4 right-4 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg shadow-2xl z-[9999] transform transition-all duration-300 translate-x-full opacity-0 flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-brand-500"></div>
+            <span id="toast-msg" class="text-sm font-medium">Notification</span>
+        </div>
+
+        <div id="view-discover" class="h-full overflow-y-auto scroll-smooth pb-20">
+            
+            <div class="relative h-72 bg-slate-900 border-b border-slate-800 overflow-hidden flex flex-col items-center justify-center pt-4">
+                <div class="absolute inset-0 hero-pattern opacity-20"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+                
+                <div class="z-10 text-center space-y-6 w-full max-w-2xl px-4">
+                    <div class="flex justify-center">
+                        <div class="flex bg-slate-800/80 backdrop-blur p-1 rounded-full border border-slate-600 shadow-2xl">
+                            <button onclick="setMode('dining')" id="btn-mode-dining" class="mode-btn active px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2"><i class="ph ph-knife-fork"></i> Dining</button>
+                            <button onclick="setMode('coffee')" id="btn-mode-coffee" class="mode-btn px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2"><i class="ph ph-coffee"></i> Coffee</button>
+                            <button onclick="setMode('drinks')" id="btn-mode-drinks" class="mode-btn px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2"><i class="ph ph-martini"></i> Drinks</button>
+                        </div>
+                    </div>
+                    <h2 id="hero-title" class="text-3xl md:text-5xl font-bold text-white tracking-tight">Find your table for any occasion</h2>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 md:px-8 mt-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="ph ph-fire text-brand-500"></i> Popular Near You</h3>
+                </div>
+                <div class="flex gap-4 overflow-x-auto hide-scroll pb-4 min-h-[280px]" id="feed-popular">
+                    <div class="w-full flex flex-col items-center justify-center py-10 text-slate-500 gap-2">
+                        <i class="ph ph-spinner animate-spin text-3xl"></i>
+                        <span>Syncing with Restaurant Network...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 md:px-8 mt-8">
+                <h3 class="text-xl font-bold text-white mb-4">Recently Visited</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="feed-history"></div>
+            </div>
+        </div>
+
+        <div id="view-map" class="hidden w-full h-full relative z-0">
+            <div id="map-container" class="w-full h-full bg-slate-900"></div>
+            <div class="absolute bottom-8 left-8 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-700 p-4 rounded-xl shadow-2xl w-48">
+                <h4 class="text-xs font-bold text-white mb-3 uppercase tracking-wider">Map Legend</h4>
+                <div class="flex items-center gap-3 mb-2"><div class="w-4 h-4 rounded-full bg-yellow-500 border-2 border-white shadow-sm"></div><span class="text-xs text-slate-300">My Visits</span></div>
+                <div class="flex items-center gap-3 mb-2"><div class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-sm"></div><span class="text-xs text-slate-300">Suggestions</span></div>
+                <div class="flex items-center gap-3"><div class="w-4 h-4 rounded-full bg-blue-500 animate-pulse border-2 border-white"></div><span class="text-xs text-slate-300">My Location</span></div>
+                <button onclick="toggleUserLocation()" class="mt-4 w-full bg-slate-700 hover:bg-slate-600 text-xs py-2 rounded-lg text-white transition-colors flex items-center justify-center gap-2"><i class="ph ph-crosshair"></i> Locate Me</button>
+            </div>
+        </div>
+
+        <div id="view-visited-list" class="hidden h-full overflow-y-auto max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <h2 class="text-3xl font-bold text-white">My Dining History</h2>
+                <div class="flex flex-wrap gap-2">
+                    <select id="visit-filter-type" onchange="renderVisitedList()" class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-3 py-2 outline-none focus:border-brand-500 cursor-pointer">
+                        <option value="all">All Types</option>
+                        <option value="dining">Dining</option>
+                        <option value="coffee">Coffee</option>
+                        <option value="drinks">Drinks</option>
+                    </select>
+                    <select id="visit-filter-rating" onchange="renderVisitedList()" class="bg-slate-800 border border-slate-700 text-slate-300 text-xs rounded-lg px-3 py-2 outline-none focus:border-brand-500 cursor-pointer">
+                        <option value="all">Any Rating</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4+ Stars</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="visited-grid"></div>
+        </div>
+
+    </main>
+
+    <div id="modal-add" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[9999] flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-lg rounded-2xl border border-slate-700 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-white">Log Experience</h3>
+                <button onclick="closeModal('modal-add')" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Place Name</label>
+                    <input type="text" id="log-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-brand-500 outline-none" placeholder="Search..." oninput="debounceSearch(this.value)">
+                    <div id="search-results" class="hidden absolute top-full left-0 w-full bg-slate-800 border border-slate-700 rounded-lg mt-1 max-h-48 overflow-y-auto z-50 shadow-xl"></div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Address / Location</label>
+                    <input type="text" id="log-location" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-brand-500 outline-none" placeholder="e.g. 7 Boundary St, London">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Category</label>
+                    <select id="log-type" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none">
+                        <option value="dining">Dining</option>
+                        <option value="coffee">Coffee</option>
+                        <option value="drinks">Drinks</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Date</label><input type="date" id="log-date" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Spend (£)</label><input type="number" id="log-spend" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="0.00"></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Rating</label>
+                    <div class="flex justify-between bg-slate-900 p-3 rounded-lg border border-slate-700">
+                        <div class="text-center"><div class="text-xs text-slate-500 mb-1">Food</div><input type="number" id="rate-food" min="1" max="5" value="4" class="w-12 bg-slate-800 text-center rounded border border-slate-600 text-white"></div>
+                        <div class="text-center"><div class="text-xs text-slate-500 mb-1">Service</div><input type="number" id="rate-service" min="1" max="5" value="4" class="w-12 bg-slate-800 text-center rounded border border-slate-600 text-white"></div>
+                        <div class="text-center"><div class="text-xs text-slate-500 mb-1">Vibe</div><input type="number" id="rate-atmosphere" min="1" max="5" value="4" class="w-12 bg-slate-800 text-center rounded border border-slate-600 text-white"></div>
+                    </div>
+                </div>
+
+                <div><label class="block text-xs font-bold text-slate-400 uppercase mb-1">Notes</label><textarea id="log-notes" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white outline-none" placeholder="Details..."></textarea></div>
+            </div>
+            <div class="p-5 border-t border-slate-700 flex justify-end">
+                <button onclick="saveLog()" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg">Save Log</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detail" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[8000] flex justify-end">
+        <div class="w-full max-w-2xl bg-slate-900 h-full shadow-2xl border-l border-slate-700 overflow-y-auto animate-slide-left">
+            <div class="h-64 bg-slate-800 relative">
+                <img id="detail-image" src="" class="w-full h-full object-cover opacity-60">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent"></div>
+                <button onclick="closeModal('modal-detail')" class="absolute top-4 left-4 bg-black/50 p-2 rounded-full text-white hover:bg-black/70 transition-colors"><i class="ph ph-arrow-left text-xl"></i></button>
+                <div class="absolute bottom-6 left-6 right-6">
+                    <h1 id="detail-name" class="text-4xl font-bold text-white mb-2 shadow-sm">Restaurant Name</h1>
+                    <p id="detail-address" class="text-sm text-slate-300 flex items-center gap-2"><i class="ph ph-map-pin"></i> <span>Location</span></p>
+                </div>
+            </div>
+            <div class="p-6 space-y-8">
+                <div class="flex gap-3">
+                    <button class="flex-1 bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold shadow-lg">Book Table</button>
+                    <button class="px-4 py-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white rounded-xl"><i class="ph ph-bookmark-simple text-xl"></i></button>
+                </div>
+                <div id="detail-reviews" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        // Using User's provided API Key (Backup method only due to CORS)
+        const API_KEY = '7317dc25b0msh98a594102605301p177898jsn716349f99964';
+        const API_HOST = 'restaurants222.p.rapidapi.com';
+
+        // --- MOCK DATABASE (Robust & Self-Healing) ---
+        const MOCK_DB = [
+            { id: 'm1', type: 'dining', name: "Dishoom", cuisine: "Indian", price: 2, location: "Shoreditch", lat: 51.5229, lng: -0.0777, rating: 4.8, reviews: 2400, image: "https://images.unsplash.com/photo-1585937421612-70a008356f36?auto=format&fit=crop&q=80&w=400", address: "7 Boundary St, London E2 7JE" },
+            { id: 'm2', type: 'dining', name: "Gloria", cuisine: "Italian", price: 3, location: "Shoreditch", lat: 51.5255, lng: -0.0792, rating: 4.6, reviews: 1800, image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=400", address: "54-56 Great Eastern St, London EC2A 3QR" },
+            { id: 'c1', type: 'coffee', name: "Monmouth Coffee", cuisine: "Coffee", price: 1, location: "Borough", lat: 51.5055, lng: -0.0909, rating: 4.9, reviews: 1200, image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=400", address: "2 Park St, London SE1 9AB" },
+            { id: 'd1', type: 'drinks', name: "Nightjar", cuisine: "Speakeasy", price: 3, location: "Shoreditch", lat: 51.5262, lng: -0.0881, rating: 4.8, reviews: 3000, image: "https://images.unsplash.com/photo-1514362545857-3bc16549766b?auto=format&fit=crop&q=80&w=400", address: "129 City Rd, London EC1V 1JB" }
+        ];
+
+        let appData = {
+            restaurants: JSON.parse(localStorage.getItem('journal_restaurants')) || [],
+            visits: JSON.parse(localStorage.getItem('journal_visits')) || []
+        };
+
+        let currentMode = 'dining';
+        let mapInstance = null;
+        let mapMarkers = [];
+        let searchTimeout = null;
+        let tempSelectedPlace = null;
+        let apiResults = [];
+
+        // --- INITIALIZATION ---
+        function init() {
+            setMode('dining');
+            document.getElementById('log-date').valueAsDate = new Date();
+            
+            // AUTO-REPAIR: Add coords to old data on load
+            setTimeout(async () => {
+                let changed = false;
+                for (let r of appData.restaurants) {
+                    if (!r.lat || !r.lng) {
+                        // Check Mock
+                        const mock = MOCK_DB.find(m => m.name === r.name);
+                        if (mock) { r.lat = mock.lat; r.lng = mock.lng; r.address = mock.address; changed = true; }
+                        else if (r.location && r.location !== 'Unknown') {
+                            // Fetch from OSM
+                            const f = await fetchCoordsForName(r.name + " " + r.location);
+                            if(f) { r.lat = f.lat; r.lng = f.lng; r.address = f.address; changed = true; }
+                        }
+                    }
+                }
+                if(changed) localStorage.setItem('journal_restaurants', JSON.stringify(appData.restaurants));
+            }, 1000);
+        }
+
+        // --- NAVIGATION ---
+        function changeView(viewId) {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            // Update Nav Styles
+            ['discover', 'map', 'visited'].forEach(v => {
+                const btn = document.getElementById(`nav-${v}`);
+                if(btn) {
+                    btn.className = v === (viewId === 'visited-list' ? 'visited' : viewId) 
+                        ? "px-4 py-1.5 rounded-full text-xs font-medium text-white bg-slate-700 transition-colors"
+                        : "px-4 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white transition-colors";
+                }
+            });
+
+            if(viewId === 'map') setTimeout(() => { if(!mapInstance) initMap(); else mapInstance.invalidateSize(); renderMap(); }, 200);
+            if(viewId === 'visited-list') renderVisitedList();
+            if(viewId === 'discover') renderDiscovery();
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-mode-${mode}`).classList.add('active');
+            document.getElementById('hero-title').innerText = mode === 'dining' ? "Find your table" : (mode === 'coffee' ? "Find your brew" : "Find a drink");
+            
+            // Try API, Fallback to Mock
+            fetchRestaurants();
+        }
+
+        // --- API & DATA FETCHING ---
+        async function fetchRestaurants() {
+            // Instant Loading UI
+            const feed = document.getElementById('feed-popular');
+            feed.innerHTML = '<div class="w-full flex justify-center items-center py-10 text-slate-500"><i class="ph ph-spinner animate-spin text-2xl mr-2"></i> Connecting...</div>';
+
+            try {
+                // FAKE delay to simulate network then fail gracefully if CORS blocks
+                const response = await fetch(`https://${API_HOST}/search`, { 
+                    method: 'GET', 
+                    headers: { 'X-RapidAPI-Key': API_KEY, 'X-RapidAPI-Host': API_HOST },
+                    signal: AbortSignal.timeout(2000) // 2s Timeout
+                });
+
+                if(!response.ok) throw new Error("API Error");
+                const data = await response.json();
+                // If success (rare on localhost), use it
+                apiResults = data.results || [];
+                renderDiscovery(true);
+
+            } catch (e) {
+                console.log("Switching to Offline Database (CORS/Network):", e);
+                showToast("Using Offline Database");
+                apiResults = [];
+                renderDiscovery(false);
+            }
+        }
+
+        function renderDiscovery(isApi = false) {
+            const feed = document.getElementById('feed-popular');
+            const source = isApi && apiResults.length > 0 ? apiResults : MOCK_DB;
+            
+            // Filter by current mode
+            const items = source.filter(r => r.type === currentMode);
+            
+            if(items.length === 0) {
+                feed.innerHTML = '<div class="text-slate-500 w-full text-center py-8">No recommendations found.</div>';
+                return;
+            }
+
+            feed.innerHTML = items.map(r => `
+                <div onclick="openDetail('${r.id}', true)" class="rest-card min-w-[280px] bg-slate-800 rounded-xl overflow-hidden border border-slate-700 cursor-pointer group relative">
+                    <div class="h-32 bg-slate-700 relative">
+                        <img src="${r.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=400'}" class="w-full h-full object-cover">
+                        <div class="absolute top-2 right-2 bg-white text-slate-900 text-xs font-bold px-2 py-1 rounded shadow">${r.rating} ★</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold text-white text-lg truncate">${r.name}</h3>
+                        <p class="text-xs text-slate-400 mb-3">${r.cuisine} • ${r.location}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- MAP LOGIC (UNFILTERED) ---
+        function initMap() {
+            if(mapInstance) return;
+            mapInstance = L.map('map-container', {zoomControl: false}).setView([51.505, -0.09], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap', subdomains: 'abcd', maxZoom: 20 }).addTo(mapInstance);
+            renderMap();
+        }
+
+        function renderMap() {
+            if(!mapInstance) return;
+            mapMarkers.forEach(m => mapInstance.removeLayer(m)); mapMarkers = [];
+
+            // 1. VISITED (Show ALL, ignore mode)
+            const visitedIds = [...new Set(appData.visits.map(v => v.restId))];
+            visitedIds.forEach(id => {
+                const r = appData.restaurants.find(x => x.id === id) || MOCK_DB.find(x => x.id === id);
+                if(r && r.lat && r.lng) {
+                    const icon = L.divIcon({ className: '', html: `<div class="custom-pin pin-visited w-8 h-8"><i class="ph ph-star-fill text-sm"></i></div>`, iconSize: [32,32], iconAnchor: [16,16] });
+                    const m = L.marker([r.lat, r.lng], {icon: icon}).addTo(mapInstance);
+                    m.bindTooltip(r.name, {permanent:false, direction:'top', className:'custom-tooltip', offset:[0,-20]});
+                    m.bindPopup(`<b>${r.name}</b><br><span class="text-yellow-400">Visited</span>`);
+                    mapMarkers.push(m);
+                }
+            });
+
+            // 2. SUGGESTIONS (Filter by mode to reduce clutter)
+            MOCK_DB.forEach(r => {
+                if(r.type === currentMode && !visitedIds.includes(r.id)) {
+                    const icon = L.divIcon({ className: '', html: `<div class="custom-pin pin-suggest w-8 h-8"><i class="ph ph-fork-knife text-sm"></i></div>`, iconSize: [32,32], iconAnchor: [16,16] });
+                    const m = L.marker([r.lat, r.lng], {icon: icon}).addTo(mapInstance);
+                    m.bindTooltip(r.name, {permanent:false, direction:'top', className:'custom-tooltip', offset:[0,-20]});
+                    mapMarkers.push(m);
+                }
+            });
+        }
+
+        // --- VISITED LIST (FILTERABLE) ---
+        function renderVisitedList() {
+            const grid = document.getElementById('visited-grid');
+            const typeFilter = document.getElementById('visit-filter-type').value;
+
+            // Get ALL visits
+            const vIds = [...new Set(appData.visits.map(v => v.restId))];
+            
+            // Map to objects
+            let restaurants = vIds.map(id => appData.restaurants.find(x => x.id === id) || MOCK_DB.find(x => x.id === id)).filter(Boolean);
+
+            // Apply Filters
+            const filtered = restaurants.filter(r => {
+                if (typeFilter !== 'all' && (r.type || 'dining') !== typeFilter) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-12">No visited places found.</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(r => {
+                const visits = appData.visits.filter(v => v.restId === r.id);
+                const avg = (visits.reduce((a,v) => a + v.ratings.food, 0) / visits.length).toFixed(1);
+                return `<div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                    <div class="h-40 bg-slate-700 relative"><img src="${r.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=400'}" class="w-full h-full object-cover">
+                    <div class="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">${r.type || 'Dining'}</div>
+                    <div class="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded flex items-center gap-1"><i class="ph ph-star-fill text-brand-500"></i> You: ${avg}</div></div>
+                    <div class="p-4"><h3 class="font-bold text-white text-lg">${r.name}</h3><p class="text-xs text-slate-400 mb-2">${r.location}</p>
+                    <div class="text-xs text-slate-500 border-t border-slate-700 pt-2">Visits: ${visits.length}</div></div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- SEARCH (OSM) ---
+        function debounceSearch(query) { clearTimeout(searchTimeout); if(query.length<3){document.getElementById('search-results').classList.add('hidden');return;} searchTimeout = setTimeout(() => performAddressSearch(query), 500); }
+        async function performAddressSearch(query) {
+            try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`); const data = await res.json();
+            const el = document.getElementById('search-results');
+            if(data.length>0) { el.innerHTML = data.map((i,idx) => `<div onclick="selectPlace(${idx})" class="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50"><div class="font-bold text-sm text-white">${i.name||i.display_name.split(',')[0]}</div><div class="text-xs text-slate-400 truncate">${i.display_name}</div></div>`).join(''); el.classList.remove('hidden'); window.tempSearchResults = data; } 
+            else el.classList.add('hidden'); } catch(e){} 
+        }
+        function selectPlace(idx) { const i = window.tempSearchResults[idx]; const n = i.name||i.display_name.split(',')[0]; document.getElementById('log-name').value = n; document.getElementById('log-location').value = i.display_name; document.getElementById('search-results').classList.add('hidden'); tempSelectedPlace = { name: n, address: i.display_name, lat: parseFloat(i.lat), lng: parseFloat(i.lon), location: i.address.suburb||i.address.city||'Unknown' }; }
+        async function fetchCoordsForName(n) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(n)}&limit=1`); const d = await r.json(); if(d.length) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), address: d[0].display_name }; } catch(e){} return null; }
+        async function fetchCoordsForAddress(a) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(a)}&limit=1`); const d = await r.json(); if(d.length) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), address: d[0].display_name }; } catch(e){} return null; }
+
+        // --- ADD VISIT LOGIC ---
+        async function saveLog() {
+            const name = document.getElementById('log-name').value;
+            const address = document.getElementById('log-location').value;
+            const type = document.getElementById('log-type').value;
+            const date = document.getElementById('log-date').value;
+            const spend = document.getElementById('log-spend').value;
+            const notes = document.getElementById('log-notes').value;
+            if(!name) return alert("Please enter a name");
+
+            let rId = currentDetailId;
+            let r = appData.restaurants.find(x => x.name === name) || MOCK_DB.find(x => x.name === name);
+            
+            // Try fetch if manual address
+            if(!r && !tempSelectedPlace && address) {
+                const f = await fetchCoordsForAddress(address);
+                if(f) tempSelectedPlace = { name, address: f.address, lat: f.lat, lng: f.lng, location: 'Unknown' };
+            }
+
+            if (!r) {
+                rId = 'r' + Date.now();
+                appData.restaurants.push({ id: rId, name: name, type: type, status: 'visited', price: 2, cuisine: 'Mixed', location: tempSelectedPlace?.location||'Unknown', address: tempSelectedPlace?.address||address, lat: tempSelectedPlace?.lat||null, lng: tempSelectedPlace?.lng||null, image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1000" });
+            } else {
+                rId = r.id;
+                const exist = appData.restaurants.find(x => x.id === rId);
+                if(exist) { exist.status = 'visited'; if(!exist.type) exist.type = type; } // Fix type
+                else appData.restaurants.push({...r, status: 'visited', type: type});
+            }
+
+            const ratings = { food: parseInt(document.getElementById('rate-food').value), service: parseInt(document.getElementById('rate-service').value), atmosphere: parseInt(document.getElementById('rate-atmosphere').value), value: 0 };
+            appData.visits.push({ id: 'v' + Date.now(), restId: rId, date, spend, notes, ratings });
+            tempSelectedPlace = null;
+            
+            localStorage.setItem('journal_restaurants', JSON.stringify(appData.restaurants));
+            localStorage.setItem('journal_visits', JSON.stringify(appData.visits));
+            
+            closeModal('modal-add');
+            showToast("Visit Logged!");
+            
+            // If on visited screen, refresh it
+            if(!document.getElementById('view-visited-list').classList.contains('hidden')) renderVisitedList();
+        }
+
+        // --- MODALS ---
+        function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; t.classList.remove('translate-x-full', 'opacity-0'); setTimeout(() => t.classList.add('translate-x-full', 'opacity-0'), 3000); }
+        function goHome() { try { window.parent.goHome(); } catch(e) { changeView('discover'); } }
+        function openDetail(id, isMock = false) { /* Simplified detail view logic would go here if needed */ }
+
+        init();
+    </script>
+</body>
+</html>

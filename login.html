@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('JoshOS Registered'))
+            .catch(err => console.log('Error:', err));
+        });
+      }
+    </script>
+
+    <title>Login - Second Brain</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0f172a; color: #f1f5f9; }
+        /* Glassmorphism Effect */
+        .glass { 
+            background: rgba(30, 41, 59, 0.4); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 255, 255, 0.05); 
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center relative overflow-hidden">
+
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+
+    <div class="glass w-full max-w-md p-8 rounded-3xl shadow-2xl relative z-10 mx-4 transition-all duration-500" id="login-card">
+        
+        <div class="text-center mb-8">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20">
+                <i class="ph ph-brain text-white text-2xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Second Brain</h1>
+            <p class="text-sm text-slate-400 mt-2">Access your life operating system.</p>
+        </div>
+
+        <form onsubmit="handleAuth(event)" class="space-y-4">
+            
+            <div id="name-group" class="hidden opacity-0 transition-all duration-300">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                <div class="relative">
+                    <i class="ph ph-user absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="name" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder-slate-600" placeholder="John Doe">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                <div class="relative">
+                    <i class="ph ph-envelope absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="email" id="email" required class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder-slate-600" placeholder="josh@example.com">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Password</label>
+                <div class="relative">
+                    <i class="ph ph-lock-key absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="password" id="password" required class="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder-slate-600" placeholder="••••••••">
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-indigo-900/20 transition-all active:scale-95 mt-2">
+                Sign In
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <button onclick="toggleMode()" id="toggle-text" class="text-xs text-slate-400 hover:text-white transition-colors">
+                Don't have an account? <span class="text-indigo-400 font-bold ml-1">Create one</span>
+            </button>
+        </div>
+
+        <div id="error-msg" class="text-red-400 text-xs text-center mt-4 hidden"></div>
+
+    </div>
+
+    <script>
+        let isLogin = true;
+
+        // Check if already logged in -> Redirect to dashboard immediately
+        if (localStorage.getItem('brain_session')) {
+            window.location.href = 'index.html';
+        }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            const nameGroup = document.getElementById('name-group');
+            const submitBtn = document.getElementById('submit-btn');
+            const toggleText = document.getElementById('toggle-text');
+            const errorMsg = document.getElementById('error-msg');
+
+            // Clear errors when switching modes
+            errorMsg.classList.add('hidden');
+
+            if (isLogin) {
+                // Switch to Login View
+                nameGroup.classList.add('opacity-0');
+                setTimeout(() => nameGroup.classList.add('hidden'), 300); // Wait for fade out
+                submitBtn.innerText = "Sign In";
+                toggleText.innerHTML = `Don't have an account? <span class="text-indigo-400 font-bold ml-1">Create one</span>`;
+            } else {
+                // Switch to Create View
+                nameGroup.classList.remove('hidden');
+                setTimeout(() => nameGroup.classList.remove('opacity-0'), 10); // Fade in
+                submitBtn.innerText = "Create Account";
+                toggleText.innerHTML = `Already have an account? <span class="text-indigo-400 font-bold ml-1">Sign In</span>`;
+            }
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value.toLowerCase().trim();
+            const password = document.getElementById('password').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const errorMsg = document.getElementById('error-msg');
+            const card = document.getElementById('login-card');
+
+            if (isLogin) {
+                // --- LOGIN LOGIC ---
+                // In a real app, this would be an API call. Here we check LocalStorage.
+                const storedUser = JSON.parse(localStorage.getItem('brain_user'));
+                
+                if (storedUser && storedUser.email === email && storedUser.password === password) {
+                    // Success: Create Session
+                    localStorage.setItem('brain_session', 'active');
+                    
+                    // Add exit animation
+                    card.classList.add('scale-95', 'opacity-0');
+                    
+                    // Redirect after animation
+                    setTimeout(() => window.location.href = 'index.html', 500);
+                } else {
+                    errorMsg.innerText = "Invalid credentials. Please try again.";
+                    errorMsg.classList.remove('hidden');
+                    
+                    // Shake animation for error
+                    card.classList.add('animate-pulse');
+                    setTimeout(() => card.classList.remove('animate-pulse'), 500);
+                }
+            } else {
+                // --- SIGNUP LOGIC ---
+                if (!email || !password || !name) {
+                    errorMsg.innerText = "All fields are required.";
+                    errorMsg.classList.remove('hidden');
+                    return;
+                }
+                
+                // Save user data securely (mock)
+                const user = { name, email, password };
+                localStorage.setItem('brain_user', JSON.stringify(user));
+                localStorage.setItem('brain_session', 'active');
+                
+                // Add exit animation
+                card.classList.add('scale-95', 'opacity-0');
+
+                // Redirect
+                setTimeout(() => window.location.href = 'index.html', 500);
+            }
+        }
+    </script>
+</body>
+</html>
