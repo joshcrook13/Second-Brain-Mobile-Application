@@ -12,14 +12,20 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => {
+          // ?v=4 forces the browser to re-check the file on the server
+          navigator.serviceWorker.register('sw.js?v=4').then(reg => {
+            
+            // Manually check for an update immediately on load
+            reg.update();
+
             reg.onupdatefound = () => {
               const installingWorker = reg.installing;
               installingWorker.onstatechange = () => {
                 if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New update available!
-                  console.log('New update available');
-                  window.location.reload(); 
+                  // If we see a new version, force the user to reload
+                  if(confirm("New System Update (v4) Available! Reload now?")) {
+                      window.location.reload();
+                  }
                 }
               };
             };

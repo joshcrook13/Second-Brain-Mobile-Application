@@ -1,4 +1,4 @@
-const CACHE_NAME = 'second-brain-v3';
+const CACHE_NAME = 'josh-os-v4';
 const urlsToCache = [
   './',
   './index.html',
