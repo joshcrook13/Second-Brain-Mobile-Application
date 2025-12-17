@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -47,440 +47,372 @@
                             muted: '#94a3b8'      
                         }
                     },
-                    animation: {
-                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    screens: {
+                        'xs': '375px',
+                        'sm': '640px',
+                        'md': '768px', // Sidebar appears from here up
+                        'lg': '1024px',
+                        'xl': '1280px',
                     }
                 }
             }
         }
     </script>
     <style>
-        .view-section { transition: opacity 0.3s ease-in-out; }
+        .view-section { transition: opacity 0.2s ease-in-out; }
         .hidden-view { display: none !important; opacity: 0; }
         .active-view { opacity: 1; } 
         
         iframe { border: none; width: 100%; height: 100%; }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        /* Mobile Scrollbar hiding */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .prose h1, .prose h2, .prose h3 { color: #f1f5f9; font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
-        .prose p { margin-bottom: 1em; line-height: 1.6; }
-        .prose ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
-        .prose strong { color: #38bdf8; }
-        .prose code { background: #334155; padding: 0.2em 0.4em; rounded: 4px; font-size: 0.9em; }
-        
-        .sortable-ghost { opacity: 0.4; background: #334155; border: 2px dashed #94a3b8; }
-        .app-card { cursor: grab; }
-        .app-card:active { cursor: grabbing; }
-        
-        .settings-tab.active { background-color: #334155; color: white; }
-
-        .collapsible-wrapper {
-            display: grid;
-            grid-template-rows: 1fr;
-            transition: grid-template-rows 0.3s ease-out, opacity 0.3s ease-out;
-            opacity: 1;
-        }
-        .collapsible-wrapper.collapsed {
-            grid-template-rows: 0fr;
-            opacity: 0.5;
-        }
-        .collapsible-inner {
-            overflow: hidden;
-        }
-
-        /* Modern Card Styles */
         .bento-card {
             background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.6));
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.2s, border-color 0.2s;
         }
-        .bento-card:hover {
-            border-color: rgba(56, 189, 248, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-        }
+        .bento-card:active { transform: scale(0.98); }
+        
+        /* Bottom Nav Styles */
+        .nav-item.active { color: #38bdf8; }
+        .nav-item.active i { weight: fill; }
+        
+        /* Safe Area for iPhone Home Bar */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-brain-bg text-brain-text h-screen flex overflow-hidden selection:bg-brain-accent selection:text-brain-bg antialiased transition-all duration-500" onclick="closeUserMenuOutside(event)">
+<body class="bg-brain-bg text-brain-text h-screen flex flex-col overflow-hidden selection:bg-brain-accent selection:text-brain-bg antialiased">
 
-    <aside class="w-20 hover:w-64 bg-brain-surface/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col hidden md:flex fixed h-full z-50 transition-all duration-300 ease-in-out group overflow-hidden shadow-2xl">
-        <div class="h-20 flex items-center shrink-0 px-6 overflow-hidden">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
+    <aside class="w-64 bg-brain-surface/80 backdrop-blur-xl border-r border-slate-700/50 flex-col hidden md:flex fixed h-full z-50">
+        <div class="h-20 flex items-center px-6 border-b border-slate-700/30">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
                 <i class="ph ph-brain text-white text-xl"></i>
             </div>
-            <span class="font-bold text-lg tracking-tight ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Second Brain</span>
+            <span class="font-bold text-lg ml-3">JoshOS</span>
         </div>
-
-        <nav class="flex-1 px-3 space-y-2 mt-2 overflow-y-auto overflow-x-hidden">
-            <button onclick="goHome()" class="w-full flex items-center h-12 px-3 bg-slate-700/50 text-blue-300 rounded-xl transition-colors group/item overflow-hidden">
-                <i class="ph ph-squares-four text-xl min-w-[24px]"></i>
-                <span class="font-medium ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
-            </button>
-            <div class="pt-6 pb-2">
-                <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Quick Links</p>
-                <a href="https://gemini.google.com" target="_blank" class="w-full flex items-center h-10 px-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors overflow-hidden"><i class="ph ph-sparkle text-lg min-w-[24px]"></i><span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Gemini</span></a>
-                <a href="https://chatgpt.com" target="_blank" class="w-full flex items-center h-10 px-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors overflow-hidden"><i class="ph ph-robot text-lg min-w-[24px]"></i><span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">ChatGPT</span></a>
-                <a href="https://www.linkedin.com" target="_blank" class="w-full flex items-center h-10 px-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors overflow-hidden"><i class="ph ph-linkedin-logo text-lg min-w-[24px]"></i><span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">LinkedIn</span></a>
-                <a href="https://www.ft.com" target="_blank" class="w-full flex items-center h-10 px-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors overflow-hidden"><i class="ph ph-newspaper text-lg min-w-[24px]"></i><span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Financial Times</span></a>
-                <a href="https://timetreeapp.com" target="_blank" class="w-full flex items-center h-10 px-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors overflow-hidden"><i class="ph ph-calendar-check text-lg min-w-[24px]"></i><span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">TimeTree</span></a>
-            </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-700/50 text-white rounded-xl"><i class="ph ph-squares-four text-xl mr-3"></i> Dashboard</button>
+            <button onclick="openSettings()" class="w-full flex items-center h-12 px-4 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors"><i class="ph ph-gear text-xl mr-3"></i> Settings</button>
         </nav>
-
-        <div id="user-menu" class="absolute bottom-20 left-4 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 hidden flex-col overflow-hidden transition-all transform origin-bottom-left">
-            <div class="px-4 py-3 border-b border-slate-700"><p class="text-xs text-slate-400 uppercase font-bold">My Account</p></div>
-            <button onclick="openSettings()" class="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-3 transition-colors"><i class="ph ph-gear text-lg"></i> Settings</button>
-            <div class="border-t border-slate-700"></div>
-            <button onclick="logout()" class="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 flex items-center gap-3 transition-colors"><i class="ph ph-sign-out text-lg"></i> Sign Out</button>
-        </div>
-
-        <div class="p-3 border-t border-slate-700/50 bg-slate-900/30">
-            <button id="user-profile-btn" onclick="toggleUserMenu(event)" class="w-full flex items-center px-2 py-2 rounded-xl hover:bg-slate-800 transition-colors text-left group focus:outline-none overflow-hidden">
-                <div class="w-9 h-9 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden border border-slate-500 group-hover:border-brain-accent transition-colors shrink-0"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" alt="User" id="user-avatar" /></div>
-                <div class="ml-3 flex-1 min-w-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap"><p class="text-sm font-bold text-white truncate" id="sidebar-username">Josh</p><p class="text-[10px] text-brain-muted truncate uppercase tracking-wide">Online</p></div>
-            </button>
+        <div class="p-4 border-t border-slate-700/30">
+            <button onclick="logout()" class="w-full flex items-center h-10 px-4 text-red-400 hover:bg-slate-800 rounded-xl transition-colors"><i class="ph ph-sign-out text-xl mr-3"></i> Sign Out</button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden relative md:ml-20 transition-all duration-300">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-64 w-full">
         
-        <header class="h-20 flex items-center justify-between px-8 z-10 shrink-0">
-            <div>
-                <h1 class="text-2xl font-bold text-white tracking-tight"><span id="greeting-text">Hello</span>, <span id="hero-username" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Josh</span>.</h1>
-                <div class="text-xs text-slate-400 font-medium mt-0.5" id="datetime">Loading date...</div>
-            </div>
-            
-            <div class="flex items-center gap-6">
-                <div class="relative w-80 group">
-                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-white transition-colors"></i>
-                    <input type="text" id="ai-search-input" placeholder="Search or ask AI..." 
-                        class="w-full bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-full py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-brain-accent focus:ring-1 focus:ring-brain-accent transition-all placeholder-slate-500 shadow-sm text-white"
-                        oninput="handleSearchInput(event)" onkeydown="handleSearch(event)" autocomplete="off">
-                    
-                    <div id="search-suggestions" class="absolute top-full left-0 w-full bg-slate-800 border border-slate-700 rounded-xl mt-2 shadow-2xl z-50 hidden max-h-96 overflow-y-auto"></div>
+        <header class="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 z-10 shrink-0 bg-brain-bg/90 backdrop-blur-sm border-b border-slate-700/30">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex md:hidden items-center justify-center shadow-lg">
+                    <i class="ph ph-brain text-white text-lg"></i>
                 </div>
-                
-                <button class="p-2 text-slate-400 hover:text-white transition-colors relative"><i class="ph ph-bell text-xl"></i></button>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-bold text-white leading-tight"><span id="greeting-text">Hello</span>, Josh.</h1>
+                </div>
             </div>
+            <button onclick="openSettings()" class="md:hidden w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full rounded-full"></button>
         </header>
 
-        <div class="flex-1 relative overflow-hidden flex flex-col">
-            <div id="view-dashboard" class="view-section active-view w-full h-full overflow-y-auto p-8 block">
-                <div class="max-w-[1600px] mx-auto space-y-8">
+        <div id="view-dashboard" class="view-section active-view flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-24 md:pb-8">
+            <div class="max-w-5xl mx-auto space-y-6">
+                
+                <div class="relative w-full">
+                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="ai-search-input" placeholder="Search or ask AI..." 
+                        class="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl py-3 pl-11 pr-4 text-sm focus:border-brain-accent focus:outline-none text-white shadow-sm"
+                        onkeydown="handleSearch(event)">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2 bento-card rounded-2xl p-5 relative overflow-hidden group cursor-pointer" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
+                        <div class="absolute top-0 right-0 p-4 opacity-10"><i class="ph ph-target text-8xl text-white"></i></div>
+                        <div class="relative z-10">
+                            <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Focus</span>
+                            <div id="dashboard-focus-content" class="mt-3">
+                                <p class="text-2xl font-bold text-white">Loading tasks...</p>
+                            </div>
+                            <div class="flex items-center gap-1 mt-4 text-xs text-slate-400"><span>Open Tasks</span> <i class="ph ph-caret-right"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="bento-card rounded-2xl p-5 relative overflow-hidden cursor-pointer" onclick="openApp(myApps.findIndex(a => a.id === 'crm'))">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="bg-indigo-500/20 p-2 rounded-lg text-indigo-400"><i class="ph ph-users-three text-xl"></i></div>
+                        </div>
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Network</h3>
+                        <div id="dashboard-crm-content"><p class="text-sm text-slate-400">Checking...</p></div>
+                    </div>
+                </div>
+
+                <div class="bento-card rounded-2xl p-4 flex items-center justify-between cursor-pointer active:scale-95 transition-transform" onclick="generateDailyBriefing()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                            <i class="ph ph-sparkle-fill text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-sm">Daily Briefing</h3>
+                            <p class="text-xs text-slate-400">Tap to generate AI summary</p>
+                        </div>
+                    </div>
+                    <i class="ph ph-caret-right text-slate-500"></i>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-lg font-bold text-white">My Apps</h2>
+                        <button onclick="openModuleModal()" class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-slate-300 flex items-center gap-1"><i class="ph ph-plus"></i> Add</button>
+                    </div>
                     
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        
-                        <div class="lg:col-span-2 bento-card rounded-3xl p-8 relative overflow-hidden group cursor-pointer" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
-                            <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
-                                <i class="ph ph-target text-9xl text-white"></i>
-                            </div>
-                            <div class="relative z-10 flex flex-col h-full justify-between">
-                                <div>
-                                    <div class="flex items-center gap-2 mb-4">
-                                        <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Current Focus</span>
-                                    </div>
-                                    <div id="dashboard-focus-content">
-                                        <p class="text-3xl font-bold text-white leading-tight">Loading tasks...</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2 mt-6 text-sm text-slate-400 group-hover:text-emerald-300 transition-colors">
-                                    <span>View Task Board</span> <i class="ph ph-arrow-right"></i>
-                                </div>
-                            </div>
+                    <div id="apps-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         </div>
-
-                        <div class="bento-card rounded-3xl p-6 relative overflow-hidden group cursor-pointer flex flex-col" onclick="openApp(myApps.findIndex(a => a.id === 'crm'))">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="bg-indigo-500/20 p-3 rounded-2xl text-indigo-400">
-                                    <i class="ph ph-users-three text-2xl"></i>
-                                </div>
-                                <i class="ph ph-dots-three text-slate-500 text-xl"></i>
-                            </div>
-                            <h3 class="text-slate-400 text-sm font-bold uppercase tracking-wider mb-1">Network Pulse</h3>
-                            <div id="dashboard-crm-content" class="flex-1 flex flex-col justify-end">
-                                <p class="text-sm text-slate-400">Checking network...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        
-                        <div class="bento-card rounded-3xl p-6 flex flex-col justify-center items-center text-center group cursor-pointer hover:bg-slate-800/80" onclick="generateDailyBriefing()">
-                            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
-                                <i class="ph ph-sparkle-fill text-3xl text-white"></i>
-                            </div>
-                            <h3 class="font-bold text-white text-lg">Daily Briefing</h3>
-                            <p class="text-xs text-slate-400 mt-1">Generate AI Summary</p>
-                        </div>
-
-                        <div class="lg:col-span-3">
-                            <div class="flex items-center justify-between mb-4">
-                                <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="ph ph-squares-four"></i> My Apps</h2>
-                                <button onclick="toggleAppsSection()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors">
-                                    View All <i id="apps-toggle-icon" class="ph ph-caret-down"></i>
-                                </button>
-                            </div>
-                            <div id="apps-wrapper" class="collapsible-wrapper">
-                                <div class="collapsible-inner">
-                                    <div id="apps-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-app-viewer" class="view-section hidden-view w-full h-full flex flex-col p-6">
-                <div class="mb-4 flex items-center justify-between shrink-0">
-                    <button onclick="goHome()" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50 hover:bg-slate-700">
-                        <i class="ph ph-arrow-left"></i> <span class="text-sm font-medium">Dashboard</span>
-                    </button>
-                    <span id="current-app-title" class="font-semibold text-slate-300 bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50">App Name</span>
-                </div>
-                <div class="bg-brain-surface/95 backdrop-blur-xl rounded-3xl border border-slate-700/50 flex-1 shadow-2xl overflow-hidden relative h-full">
-                     <iframe id="app-frame" src="" allowfullscreen class="w-full h-full block"></iframe>
                 </div>
             </div>
         </div>
 
-        <div id="ai-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-            <div class="bg-slate-800 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl flex flex-col max-h-[80vh] transform scale-95 transition-transform duration-300" id="ai-modal-content">
-                <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-3xl">
-                    <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center animate-pulse-fast shadow-lg" id="ai-loading-icon"><i class="ph ph-sparkle-fill text-white text-xl"></i></div><h3 class="font-bold text-xl text-white" id="ai-modal-title">Gemini Thinking...</h3></div>
-                    <button onclick="closeAiModal()" class="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-700 rounded-full"><i class="ph ph-x text-xl"></i></button>
-                </div>
-                <div class="p-8 overflow-y-auto prose prose-invert max-w-none text-slate-300" id="ai-modal-body"></div>
-            </div>
+        <div id="view-app-viewer" class="view-section hidden-view absolute inset-0 bg-brain-bg z-40 flex flex-col h-full w-full">
+            <div class="h-14 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4 shrink-0">
+                <button onclick="goHome()" class="text-slate-400 hover:text-white p-2"><i class="ph ph-arrow-left text-xl"></i></button>
+                <span id="current-app-title" class="font-bold text-white text-sm">App</span>
+                <div class="w-8"></div> </div>
+            <iframe id="app-frame" src="" class="flex-1 w-full bg-slate-900"></iframe>
         </div>
 
-        <div id="module-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
-            <div class="bg-slate-800 w-full max-w-md rounded-3xl border border-slate-700 shadow-2xl flex flex-col transform scale-100 transition-all">
-                <div class="p-6 border-b border-slate-700 flex justify-between items-center"><h3 class="font-bold text-xl text-white">Add New Module</h3><button onclick="closeModuleModal()" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button></div>
-                <div class="p-6 space-y-5">
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Module Name</label><input type="text" id="mod-title" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white transition-colors"></div>
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</label><input type="text" id="mod-desc" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white transition-colors"></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Icon</label><input type="text" id="mod-icon" placeholder="ph-cube" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white transition-colors"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Color</label><select id="mod-color" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white transition-colors"><option value="blue">Blue</option><option value="green">Green</option><option value="orange">Orange</option><option value="purple">Purple</option><option value="red">Red</option><option value="indigo">Indigo</option><option value="emerald">Emerald</option></select></div>
-                    </div>
-                    <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">File Path / URL</label><input type="text" id="mod-url" placeholder="apps/filename.html" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white transition-colors"></div>
-                </div>
-                <div class="p-6 border-t border-slate-700 flex justify-end gap-3"><button onclick="closeModuleModal()" class="px-5 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition-colors">Cancel</button><button onclick="saveModule()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg transition-transform active:scale-95">Add Module</button></div>
-            </div>
-        </div>
-
-        <div id="settings-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
-            <div class="bg-slate-800 w-full max-w-2xl rounded-3xl border border-slate-700 shadow-2xl flex flex-col transform scale-100 transition-all max-h-[90vh]">
-                <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-3xl"><h3 class="font-bold text-xl flex items-center gap-2"><i class="ph ph-gear-six"></i> System Settings</h3><button onclick="closeSettings()" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button></div>
-                <div class="p-0 overflow-y-auto flex-1 flex flex-col md:flex-row">
-                    <div class="w-full md:w-56 bg-slate-900/50 border-b md:border-b-0 md:border-r border-slate-700 p-3 flex md:flex-col gap-1">
-                        <button onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="settings-tab active text-left px-4 py-3 rounded-xl text-sm font-medium text-white bg-slate-700">Profile</button>
-                        <button onclick="switchSettingsTab('appearance')" id="tab-btn-appearance" class="settings-tab text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">Appearance</button>
-                        <button onclick="switchSettingsTab('data')" id="tab-btn-data" class="settings-tab text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">Data & Backup</button>
-                        <button onclick="switchSettingsTab('api')" id="tab-btn-api" class="settings-tab text-left px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800">Integrations</button>
-                    </div>
-                    <div class="flex-1 p-8 space-y-8">
-                        <div id="tab-profile" class="settings-content"><h4 class="text-sm font-bold text-white mb-4 uppercase tracking-wider text-slate-500">User Profile</h4><div class="space-y-4"><div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Display Name</label><input type="text" id="settings-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white"></div></div></div>
-                        <div id="tab-appearance" class="settings-content hidden"><h4 class="text-sm font-bold text-white mb-4 uppercase tracking-wider text-slate-500">Wallpaper</h4><div class="grid grid-cols-3 gap-3 mb-4"><button onclick="setWallpaper('')" class="h-24 bg-slate-900 border border-slate-600 rounded-xl hover:border-brain-accent flex items-center justify-center text-xs text-slate-400 transition-colors">Default</button><button onclick="setWallpaper('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1000&auto=format&fit=crop')" class="h-24 bg-cover bg-center rounded-xl border border-slate-600 hover:border-brain-accent transition-all hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=200&auto=format&fit=crop')"></button><button onclick="setWallpaper('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=1000&auto=format&fit=crop')" class="h-24 bg-cover bg-center rounded-xl border border-slate-600 hover:border-brain-accent transition-all hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=80&w=200&auto=format&fit=crop')"></button></div><div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Custom URL</label><input type="text" id="settings-wallpaper" placeholder="https://..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-brain-accent focus:outline-none text-white"></div></div>
-                        <div id="tab-data" class="settings-content hidden"><h4 class="text-sm font-bold text-white mb-4 uppercase tracking-wider text-slate-500">Backup & Restore</h4><div class="bg-indigo-500/10 border border-indigo-500/20 p-6 rounded-2xl mb-6"><div class="flex items-center gap-3 mb-2"><i class="ph ph-download-simple text-indigo-400 text-2xl"></i><h5 class="font-bold text-indigo-200 text-lg">Export Backup</h5></div><p class="text-sm text-indigo-200/70 mb-4">Download a JSON file containing all your CRM contacts, tasks, journal entries, and settings.</p><button onclick="exportData()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-bold transition-colors shadow-lg">Download .json</button></div><div class="bg-slate-900/50 border border-slate-700 p-6 rounded-2xl"><div class="flex items-center gap-3 mb-2"><i class="ph ph-upload-simple text-slate-400 text-2xl"></i><h5 class="font-bold text-slate-200 text-lg">Import Data</h5></div><p class="text-sm text-slate-500 mb-4">Restore your brain from a backup file.</p><input type="file" id="import-file" accept=".json" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer"/><button onclick="importData()" class="mt-4 px-5 py-2 bg-slate-700 hover:bg-white hover:text-slate-900 text-white rounded-lg text-sm font-bold transition-colors">Restore Now</button></div></div>
-                        <div id="tab-api" class="settings-content hidden"><h4 class="text-sm font-bold text-white mb-4 uppercase tracking-wider text-slate-500">Gemini AI</h4><div class="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50"><label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">API Key</label><div class="relative"><input type="password" id="settings-api-key" placeholder="Paste key here..." class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-4 pr-10 py-3 text-sm focus:border-indigo-500 focus:outline-none text-white transition-all"><i class="ph ph-lock absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"></i></div><p class="text-xs text-slate-500 mt-2">Required for AI search and Daily Briefings.</p></div></div>
-                    </div>
-                </div>
-                <div class="p-6 border-t border-slate-700 flex justify-end gap-3 bg-slate-800/30 rounded-b-3xl"><button onclick="closeSettings()" class="px-5 py-2.5 text-sm font-medium text-slate-400 hover:text-white transition-colors">Cancel</button><button onclick="saveSettings()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-transform active:scale-95">Save Changes</button></div>
-            </div>
-        </div>
     </main>
+
+    <nav class="fixed bottom-0 left-0 w-full h-[80px] bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-around items-start pt-3 z-50 md:hidden pb-safe">
+        <button onclick="goHome()" class="nav-item active flex flex-col items-center gap-1 w-16">
+            <i class="ph ph-squares-four text-2xl"></i>
+            <span class="text-[10px] font-medium">Home</span>
+        </button>
+        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-16">
+            <i class="ph ph-sparkle text-2xl"></i>
+            <span class="text-[10px] font-medium">AI</span>
+        </button>
+        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-16">
+            <i class="ph ph-gear text-2xl"></i>
+            <span class="text-[10px] font-medium">Settings</span>
+        </button>
+    </nav>
+
+    <div id="ai-modal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm hidden z-[100] flex items-end md:items-center justify-center sm:p-4">
+        <div class="bg-slate-800 w-full max-w-2xl rounded-t-3xl md:rounded-3xl border-t md:border border-slate-700 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50 rounded-t-3xl">
+                <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center animate-pulse"><i class="ph ph-sparkle-fill text-white"></i></div><h3 class="font-bold text-white">Gemini</h3></div>
+                <button onclick="closeAiModal()" class="p-2 bg-slate-700 rounded-full text-white"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto prose prose-invert prose-sm max-w-none text-slate-300" id="ai-modal-body"></div>
+        </div>
+    </div>
+
+    <div id="module-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-sm rounded-2xl border border-slate-700 shadow-xl p-5">
+            <h3 class="font-bold text-lg text-white mb-4">Add App</h3>
+            <div class="space-y-3">
+                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="text" id="mod-desc" placeholder="Description" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="text" id="mod-icon" placeholder="Icon (e.g., ph-cube)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                <input type="text" id="mod-url" placeholder="File Path (apps/file.html)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+            </div>
+            <div class="flex justify-end gap-2 mt-5">
+                <button onclick="closeModuleModal()" class="px-4 py-2 text-slate-400 text-sm">Cancel</button>
+                <button onclick="saveModule()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-md rounded-2xl border border-slate-700 shadow-xl flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center"><h3 class="font-bold text-white">Settings</h3><button onclick="closeSettings()" class="text-slate-400"><i class="ph ph-x text-lg"></i></button></div>
+            <div class="p-4 overflow-y-auto space-y-6">
+                <div><label class="text-xs text-slate-500 font-bold uppercase">Name</label><input type="text" id="settings-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg mt-1 px-3 py-2 text-white text-sm"></div>
+                <div><label class="text-xs text-slate-500 font-bold uppercase">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-900 border border-slate-700 rounded-lg mt-1 px-3 py-2 text-white text-sm"></div>
+                <div class="pt-2"><button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 rounded-lg text-sm font-bold border border-red-500/20">Sign Out</button></div>
+            </div>
+            <div class="p-4 border-t border-slate-700"><button onclick="saveSettings()" class="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-bold">Save Changes</button></div>
+        </div>
+    </div>
 
     <script>
         // --- DATA & CONFIG ---
         const defaultApps = [
-            { id: 'finance', title: "Vault Finance", desc: "Budget & Cashflow.", icon: "ph-wallet", color: "emerald", url: "apps/finance.html", demoContent: "" },
-            { id: 'crm', title: "Personal CRM", desc: "Network & Calendar.", icon: "ph-users-three", color: "indigo", url: "apps/Personalcrm.html", demoContent: "" },
-            { id: 'food', title: "Gourmet Tracker", desc: "Wishlist & Reviews.", icon: "ph-bowl-food", color: "orange", url: "apps/restaurantindex.html", demoContent: "" },
-            { id: 'todo', title: "Task Master", desc: "To-Do List & Goals.", icon: "ph-check-square", color: "green", url: "apps/todo.html", demoContent: "" },
-            { id: 'journal', title: "Mind Log", desc: "Daily Reflections.", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html", demoContent: "" }
+            { id: 'finance', title: "Vault Finance", desc: "Budget & Cashflow", icon: "ph-wallet", color: "emerald", url: "apps/finance.html" },
+            { id: 'crm', title: "Personal CRM", desc: "Network & Calendar", icon: "ph-users-three", color: "indigo", url: "apps/Personalcrm.html" },
+            { id: 'food', title: "Gourmet Tracker", desc: "Wishlist & Reviews", icon: "ph-bowl-food", color: "orange", url: "apps/restaurantindex.html" },
+            { id: 'todo', title: "Task Master", desc: "To-Do List & Goals", icon: "ph-check-square", color: "green", url: "apps/todo.html" },
+            { id: 'journal', title: "Mind Log", desc: "Daily Reflections", icon: "ph-book-bookmark", color: "purple", url: "apps/journalapp.html" }
         ];
 
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
-        // --- USER MANAGEMENT ---
-        function loadUserData() {
-            const user = JSON.parse(localStorage.getItem('brain_user')) || { name: 'Josh', email: 'josh@example.com' };
-            document.getElementById('sidebar-username').innerText = user.name;
-            document.getElementById('hero-username').innerText = user.name;
-            document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`;
-            updateGreeting(); 
-        }
-
-        function updateGreeting() {
-            const hour = new Date().getHours();
-            const greetingEl = document.getElementById('greeting-text');
-            let greeting = 'Good Morning';
-            if (hour >= 12 && hour < 18) greeting = 'Good Afternoon';
-            else if (hour >= 18) greeting = 'Good Evening';
-            if (greetingEl) greetingEl.innerText = greeting;
-        }
-
-        function toggleUserMenu(e) { e.stopPropagation(); const menu = document.getElementById('user-menu'); const btn = document.getElementById('user-profile-btn'); if (menu.classList.contains('hidden')) { menu.classList.remove('hidden'); menu.classList.add('flex'); btn.classList.add('bg-slate-800'); } else { menu.classList.add('hidden'); menu.classList.remove('flex'); btn.classList.remove('bg-slate-800'); } }
-        function closeUserMenuOutside(e) { const menu = document.getElementById('user-menu'); const btn = document.getElementById('user-profile-btn'); if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !btn.contains(e.target)) { menu.classList.add('hidden'); menu.classList.remove('flex'); btn.classList.remove('bg-slate-800'); } }
-        function logout() { localStorage.removeItem('brain_session'); window.location.href = 'login.html'; }
-
-        // --- SETTINGS LOGIC ---
-        function openSettings() { const modal = document.getElementById('settings-modal'); const user = JSON.parse(localStorage.getItem('brain_user')) || { name: 'User' }; document.getElementById('settings-name').value = user.name; document.getElementById('settings-api-key').value = localStorage.getItem('brain_gemini_key') || ''; document.getElementById('settings-wallpaper').value = localStorage.getItem('brain_wallpaper') || ''; switchSettingsTab('profile'); document.getElementById('user-menu').classList.add('hidden'); modal.classList.remove('hidden'); }
-        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
-        function saveSettings() { const newName = document.getElementById('settings-name').value; const newKey = document.getElementById('settings-api-key').value; const newWallpaper = document.getElementById('settings-wallpaper').value; const user = JSON.parse(localStorage.getItem('brain_user')) || {}; user.name = newName; localStorage.setItem('brain_user', JSON.stringify(user)); localStorage.setItem('brain_gemini_key', newKey); localStorage.setItem('brain_wallpaper', newWallpaper); loadUserData(); applyWallpaper(newWallpaper); closeSettings(); }
-        function switchSettingsTab(tabId) { document.querySelectorAll('.settings-content').forEach(el => el.classList.add('hidden')); document.getElementById(`tab-${tabId}`).classList.remove('hidden'); document.querySelectorAll('.settings-tab').forEach(el => { el.classList.remove('bg-slate-700', 'text-white'); el.classList.add('text-slate-400', 'hover:text-white'); }); document.getElementById(`tab-btn-${tabId}`).classList.remove('text-slate-400', 'hover:text-white'); document.getElementById(`tab-btn-${tabId}`).classList.add('bg-slate-700', 'text-white'); }
-        function setWallpaper(url) { document.getElementById('settings-wallpaper').value = url; applyWallpaper(url); }
-        function applyWallpaper(url) { const body = document.body; if (url) { body.style.backgroundImage = `url('${url}')`; body.style.backgroundSize = 'cover'; body.style.backgroundPosition = 'center'; body.style.boxShadow = 'inset 0 0 0 2000px rgba(15, 23, 42, 0.85)'; } else { body.style.backgroundImage = ''; body.style.boxShadow = ''; } }
-        
-        function exportData() { const data = {}; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith('brain_') || key.startsWith('tm_') || key.startsWith('crm_') || key.startsWith('jn_') || key.startsWith('journal_')) { data[key] = localStorage.getItem(key); } } const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `second_brain_backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); }
-        function importData() { const fileInput = document.getElementById('import-file'); const file = fileInput.files[0]; if (!file) return alert("Please select a .json file first."); if (confirm("WARNING: This will overwrite your current data. Are you sure?")) { const reader = new FileReader(); reader.onload = function(e) { try { const data = JSON.parse(e.target.result); Object.keys(data).forEach(key => { localStorage.setItem(key, data[key]); }); alert("Restored successfully! Reloading..."); window.location.reload(); } catch (err) { alert("Error reading backup file."); } }; reader.readAsText(file); } }
-
-        // --- APPS TOGGLE LOGIC ---
-        function toggleAppsSection() { const wrapper = document.getElementById('apps-wrapper'); const icon = document.getElementById('apps-toggle-icon'); if (wrapper.classList.contains('collapsed')) { wrapper.classList.remove('collapsed'); icon.style.transform = 'rotate(0deg)'; localStorage.setItem('brain_apps_collapsed', 'false'); } else { wrapper.classList.add('collapsed'); icon.style.transform = 'rotate(-90deg)'; localStorage.setItem('brain_apps_collapsed', 'true'); } }
-        function initAppsState() { const isCollapsed = localStorage.getItem('brain_apps_collapsed') === 'true'; const wrapper = document.getElementById('apps-wrapper'); const icon = document.getElementById('apps-toggle-icon'); if (isCollapsed) { wrapper.classList.add('collapsed'); icon.style.transform = 'rotate(-90deg)'; } else { wrapper.classList.remove('collapsed'); icon.style.transform = 'rotate(0deg)'; } }
-
-        // --- SMART SEARCH LOGIC ---
-        function handleSearchInput(event) {
-            const query = event.target.value.toLowerCase().trim();
-            const suggestionsEl = document.getElementById('search-suggestions');
-            
-            if (!query) {
-                suggestionsEl.classList.add('hidden');
-                return;
-            }
-
-            const results = searchLocalBrain(query);
-            
-            if (results.length > 0) {
-                suggestionsEl.innerHTML = results.map(item => `
-                    <div onclick="openApp(${item.appIndex}); document.getElementById('search-suggestions').classList.add('hidden'); document.getElementById('ai-search-input').value = '';" 
-                         class="px-4 py-3 hover:bg-slate-700/50 cursor-pointer border-b border-slate-700/50 last:border-0 flex items-center gap-3 transition-colors">
-                        <div class="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-700 shrink-0">
-                            <i class="ph ${item.icon} ${item.color} text-lg"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-white text-sm">${item.title}</h4>
-                            <p class="text-xs text-slate-400">${item.type} • ${item.meta}</p>
-                        </div>
-                    </div>
-                `).join('');
-                suggestionsEl.classList.remove('hidden');
-            } else {
-                suggestionsEl.classList.add('hidden');
-            }
-        }
-
-        document.addEventListener('click', function(e) {
-            const wrapper = document.querySelector('.relative.w-80'); 
-            if (wrapper && !wrapper.contains(e.target)) {
-                document.getElementById('search-suggestions').classList.add('hidden');
-            }
-        });
-
-        async function handleSearch(event) {
-            if (event.key === 'Enter') {
-                const query = event.target.value.toLowerCase().trim();
-                document.getElementById('search-suggestions').classList.add('hidden'); 
-                if (!query) return;
-                openAiModal("Processing Query..."); 
-                event.target.value = ""; 
-                const response = await callGemini(`You are a helpful 'Second Brain' assistant. User asks: "${query}". Answer in Markdown.`); 
-                updateAiModal("Brain Search Result", response);
-            }
-        }
-
-        function searchLocalBrain(query) {
-            let hits = [];
-            const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
-            tasks.filter(t => t.title.toLowerCase().includes(query)).forEach(t => { hits.push({ type: 'Task', title: t.title, meta: `Due: ${t.dueDate}`, icon: 'ph-check-square', color: 'text-green-400', appIndex: myApps.findIndex(a => a.id === 'todo') }); });
-            const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [];
-            contacts.filter(c => (c.firstName + ' ' + c.lastName).toLowerCase().includes(query)).forEach(c => { hits.push({ type: 'Contact', title: `${c.firstName} ${c.lastName}`, meta: c.company, icon: 'ph-user', color: 'text-indigo-400', appIndex: myApps.findIndex(a => a.id === 'crm') }); });
-            const places = JSON.parse(localStorage.getItem('journal_restaurants')) || [];
-            places.filter(p => p.name.toLowerCase().includes(query)).forEach(p => { hits.push({ type: 'Place', title: p.name, meta: p.location, icon: 'ph-bowl-food', color: 'text-orange-400', appIndex: myApps.findIndex(a => a.id === 'food') }); });
-            const entries = JSON.parse(localStorage.getItem('jn_entries')) || [];
-            entries.filter(e => e.title.toLowerCase().includes(query) || e.body.toLowerCase().includes(query)).forEach(e => { hits.push({ type: 'Journal', title: e.title || 'Untitled', meta: new Date(e.date).toLocaleDateString(), icon: 'ph-book-bookmark', color: 'text-purple-400', appIndex: myApps.findIndex(a => a.id === 'journal') }); });
-            return hits;
-        }
-
-        // --- RENDER LOGIC ---
-        const container = document.getElementById('apps-container');
-        function renderApps() {
-            container.innerHTML = ''; let savedOrder = JSON.parse(localStorage.getItem('brain_app_order')) || []; const appMap = new Map(myApps.map(app => [app.id, app])); savedOrder.forEach(id => { if (appMap.has(id)) { renderCard(appMap.get(id)); appMap.delete(id); } }); appMap.forEach(app => renderCard(app));
-            
-            const addBtn = document.createElement('div'); 
-            addBtn.className = "bento-card group p-6 rounded-3xl border border-dashed border-slate-600 hover:border-blue-400 transition-all cursor-pointer flex flex-col items-center justify-center min-h-[140px]"; 
-            addBtn.onclick = openModuleModal; 
-            addBtn.innerHTML = `<div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i class="ph ph-plus text-2xl text-brain-accent"></i></div><span class="text-sm font-medium text-slate-400 group-hover:text-white transition-colors">Add App</span>`; 
-            container.appendChild(addBtn);
-            
-            updateFocusWidget(); updateCRMWidget(); initAppsState();
-        }
-
-        function updateFocusWidget() { const focusEl = document.getElementById('dashboard-focus-content'); try { const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || []; const pending = tasks.filter(t => t.status === 'pending'); if (pending.length > 0) { const priorityWeight = { 'high': 3, 'medium': 2, 'low': 1 }; pending.sort((a, b) => { const pA = priorityWeight[a.priority] || 0; const pB = priorityWeight[b.priority] || 0; if (pA !== pB) return pB - pA; return new Date(a.dueDate) - new Date(b.dueDate); }); const topTask = pending[0]; focusEl.innerHTML = `<h3 class="text-4xl font-bold text-white mb-2 leading-tight tracking-tight">${topTask.title}</h3><p class="text-lg text-emerald-400 font-medium">Due: ${new Date(topTask.dueDate).toLocaleDateString()}</p>`; } else { focusEl.innerHTML = `<p class="text-3xl text-slate-400 font-medium">All caught up! 🌴</p>`; } } catch (e) { focusEl.innerHTML = `<p class="text-slate-400">Add tasks to "Task Master".</p>`; } }
-        function updateCRMWidget() { const crmEl = document.getElementById('dashboard-crm-content'); try { const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || []; const overdue = contacts.filter(c => c.cadenceDays && c.lastContactAt).map(c => { const next = new Date(new Date(c.lastContactAt).setDate(new Date(c.lastContactAt).getDate() + c.cadenceDays)); const diffDays = Math.ceil((new Date() - next) / (1000 * 60 * 60 * 24)); return { ...c, diffDays }; }).filter(c => c.diffDays > 0).sort((a,b) => b.diffDays - a.diffDays); if (overdue.length > 0) { const top = overdue[0]; crmEl.innerHTML = `<div class="mb-4"><h3 class="text-2xl font-bold text-white leading-none mb-1">${top.firstName} ${top.lastName}</h3><p class="text-xs text-slate-400">${top.company}</p></div><div class="flex justify-between items-end"><span class="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded border border-red-500/30">Overdue ${top.diffDays}d</span><button class="w-8 h-8 rounded-full bg-slate-700 hover:bg-white hover:text-slate-900 transition-colors flex items-center justify-center text-slate-300"><i class="ph ph-paper-plane-right"></i></button></div>`; } else { crmEl.innerHTML = `<div class="h-full flex items-center justify-center text-center"><p class="text-sm text-slate-500">Your network is active and healthy. 🤝</p></div>`; } } catch (e) { crmEl.innerHTML = `<p class="text-slate-400 text-sm">Add contacts to "Personal CRM".</p>`; } }
-        
-        function renderCard(app) { 
-            const card = document.createElement('div'); 
-            const currentIndex = myApps.findIndex(a => a.id === app.id); 
-            card.setAttribute('data-id', app.id); 
-            card.className = `bento-card group p-6 rounded-3xl relative overflow-hidden cursor-pointer flex flex-col items-start justify-between min-h-[160px]`; 
-            card.onclick = (e) => { openApp(currentIndex); }; 
-            card.innerHTML = `
-                <div class="w-12 h-12 bg-${app.color}-500/20 rounded-2xl flex items-center justify-center mb-4 text-${app.color}-400 group-hover:scale-110 transition-transform shadow-lg shadow-${app.color}-900/20"><i class="ph ${app.icon} text-2xl"></i></div>
-                <div><h3 class="text-lg font-bold text-white mb-1 leading-tight">${app.title}</h3><p class="text-xs text-slate-400 line-clamp-1">${app.desc}</p></div>
-                <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"><div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white"><i class="ph ph-arrow-right"></i></div></div>
-            `; 
-            container.appendChild(card); 
-        }
-        
-        function showAppNotifications(appName) { openAiModal(`${appName} Notifications`); document.getElementById('ai-modal-body').innerHTML = `<div class="space-y-3"><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><div class="flex justify-between items-start"><p class="text-sm text-slate-300 font-medium">✨ Weekly Review</p><span class="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded">Urgent</span></div><p class="text-xs text-slate-500 mt-1">Due in 2 days</p></div><div class="bg-slate-800 p-4 rounded-lg border border-slate-700"><p class="text-sm text-slate-300">👋 New comment on your draft.</p><p class="text-xs text-slate-500 mt-1">1 hour ago</p></div><button onclick="closeAiModal()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm mt-2 transition-colors">Dismiss All</button></div>`; document.getElementById('ai-loading-icon').classList.remove('animate-pulse-fast'); document.getElementById('ai-loading-icon').innerHTML = '<i class="ph ph-bell text-white"></i>'; }
-        
-        // --- MODULE LOGIC ---
-        const modModal = document.getElementById('module-modal');
-        function openModuleModal() { ['mod-title','mod-desc','mod-icon','mod-url'].forEach(id => document.getElementById(id).value = ""); modModal.classList.remove('hidden'); }
-        function closeModuleModal() { modModal.classList.add('hidden'); }
-        function saveModule() { const title = document.getElementById('mod-title').value; const desc = document.getElementById('mod-desc').value; const icon = document.getElementById('mod-icon').value || 'ph-cube'; const color = document.getElementById('mod-color').value; const url = document.getElementById('mod-url').value; if(!title) return alert("Module Name is required."); const newApp = { id: 'app-' + Date.now(), title, desc, icon, color, url, demoContent: "<body style='background:#0f172a; color:white; font-family:sans-serif; padding:40px; text-align:center;'><h1>" + title + " Loaded</h1><p>Placeholder content.</p></body>" }; myApps.push(newApp); localStorage.setItem('brain_apps', JSON.stringify(myApps)); renderApps(); closeModuleModal(); }
-
-        // --- VIEW SWITCHING ---
-        const dashboardView = document.getElementById('view-dashboard'); const appView = document.getElementById('view-app-viewer'); const appFrame = document.getElementById('app-frame'); const appTitle = document.getElementById('current-app-title');
-        function openApp(index) { const app = myApps[index]; appTitle.textContent = app.title; if (app.url) { appFrame.src = app.url; appFrame.removeAttribute('srcdoc'); } else { appFrame.srcdoc = app.demoContent; } dashboardView.classList.replace('active-view', 'hidden-view'); setTimeout(() => { dashboardView.style.display = 'none'; appView.style.display = 'flex'; requestAnimationFrame(() => appView.classList.replace('hidden-view', 'active-view')); }, 300); }
-        function goHome() { appFrame.src = ""; appFrame.srcdoc = ""; appView.classList.replace('active-view', 'hidden-view'); setTimeout(() => { appView.style.display = 'none'; dashboardView.style.display = 'block'; requestAnimationFrame(() => dashboardView.classList.replace('hidden-view', 'active-view')); }, 300); updateFocusWidget(); updateCRMWidget(); }
-
-        // --- AI LOGIC ---
-        async function callGemini(prompt) { const apiKey = localStorage.getItem('brain_gemini_key'); if (!apiKey) { return "Error: API Key is missing. Please add it in Settings."; } const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; try { const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); if (!response.ok) throw new Error(`API Error: ${response.status}`); const data = await response.json(); return data.candidates[0].content.parts[0].text; } catch (error) { return "I'm having trouble connecting to the neural network right now."; } }
-        async function generateDailyBriefing() { openAiModal("Generating Briefing..."); const prompt = `Generate a motivational Daily Briefing for ${document.getElementById('sidebar-username').innerText}. Date: ${new Date().toLocaleDateString()}. Keep it concise.`; const response = await callGemini(prompt); updateAiModal("Daily Briefing", response); }
-
-        // --- MODAL HELPERS ---
-        const aiModal = document.getElementById('ai-modal');
-        function openAiModal(title) { document.getElementById('ai-modal-title').innerText = title; document.getElementById('ai-modal-body').innerHTML = '<div class="flex flex-col items-center justify-center h-32 space-y-4"><div class="w-8 h-8 border-4 border-brain-accent border-t-transparent rounded-full animate-spin"></div><p class="text-sm text-brain-muted">Consulting the neural net...</p></div>'; document.getElementById('ai-loading-icon').classList.add('animate-pulse-fast'); aiModal.classList.remove('hidden'); void aiModal.offsetWidth; aiModal.classList.remove('opacity-0'); document.getElementById('ai-modal-content').classList.remove('scale-95'); }
-        function updateAiModal(title, markdown) { document.getElementById('ai-modal-title').innerText = title; document.getElementById('ai-loading-icon').classList.remove('animate-pulse-fast'); document.getElementById('ai-modal-body').innerHTML = marked.parse(markdown); }
-        function closeAiModal() { aiModal.classList.add('opacity-0'); document.getElementById('ai-modal-content').classList.add('scale-95'); setTimeout(() => { aiModal.classList.add('hidden'); }, 300); }
-        aiModal.addEventListener('click', (e) => { if (e.target === aiModal) closeAiModal(); });
-        
         // --- INIT ---
-        document.getElementById('datetime').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        loadUserData(); applyWallpaper(localStorage.getItem('brain_wallpaper')); renderApps();
+        function init() {
+            loadUserData();
+            renderApps();
+            // Drag and Drop with DELAY for Mobile
+            new Sortable(document.getElementById('apps-container'), { 
+                animation: 150, 
+                ghostClass: 'opacity-50', 
+                delay: 200, 
+                delayOnTouchOnly: true,
+                onEnd: function (evt) { 
+                    const order = []; 
+                    document.getElementById('apps-container').querySelectorAll('.bento-card').forEach(el => order.push(el.getAttribute('data-id'))); 
+                    localStorage.setItem('brain_app_order', JSON.stringify(order)); 
+                } 
+            });
+        }
+
+        // --- RENDER APPS ---
+        function renderApps() {
+            const container = document.getElementById('apps-container');
+            container.innerHTML = '';
+            
+            let savedOrder = JSON.parse(localStorage.getItem('brain_app_order')) || [];
+            const appMap = new Map(myApps.map(app => [app.id, app]));
+            
+            // Reorder based on saved preference
+            savedOrder.forEach(id => { if (appMap.has(id)) { renderCard(appMap.get(id)); appMap.delete(id); } });
+            appMap.forEach(app => renderCard(app));
+            
+            updateFocusWidget(); updateCRMWidget();
+        }
+
+        function renderCard(app) {
+            const card = document.createElement('div');
+            const idx = myApps.findIndex(a => a.id === app.id);
+            card.setAttribute('data-id', app.id);
+            card.className = `bento-card p-4 rounded-xl flex items-center gap-4 cursor-pointer active:scale-95`;
+            card.onclick = () => openApp(idx);
+            card.innerHTML = `
+                <div class="w-12 h-12 bg-${app.color || 'blue'}-500/20 rounded-xl flex items-center justify-center text-${app.color || 'blue'}-400 shrink-0">
+                    <i class="ph ${app.icon} text-2xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-white text-sm truncate">${app.title}</h3>
+                    <p class="text-xs text-slate-400 truncate">${app.desc}</p>
+                </div>
+                <i class="ph ph-caret-right text-slate-600"></i>
+            `;
+            document.getElementById('apps-container').appendChild(card);
+        }
+
+        // --- APP NAVIGATION ---
+        function openApp(index) {
+            const app = myApps[index];
+            document.getElementById('current-app-title').innerText = app.title;
+            const frame = document.getElementById('app-frame');
+            frame.src = app.url;
+            
+            // View Switch
+            document.getElementById('view-dashboard').classList.add('hidden-view');
+            document.getElementById('view-app-viewer').classList.remove('hidden-view');
+            document.querySelector('nav').classList.add('hidden'); // Hide bottom nav in app mode
+        }
+
+        function goHome() {
+            document.getElementById('app-frame').src = "";
+            document.getElementById('view-dashboard').classList.remove('hidden-view');
+            document.getElementById('view-app-viewer').classList.add('hidden-view');
+            document.querySelector('nav').classList.remove('hidden'); // Show bottom nav
+            updateFocusWidget(); updateCRMWidget();
+        }
+
+        // --- WIDGETS ---
+        function updateFocusWidget() {
+            const el = document.getElementById('dashboard-focus-content');
+            try {
+                const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
+                const pending = tasks.filter(t => t.status === 'pending');
+                if (pending.length > 0) el.innerHTML = `<p class="text-xl font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-400">Due: ${pending[0].dueDate}</p>`;
+                else el.innerHTML = `<p class="text-xl text-slate-500">All caught up!</p>`;
+            } catch(e) { el.innerHTML = `<p class="text-sm text-slate-500">No tasks found.</p>`; }
+        }
+        function updateCRMWidget() {
+            const el = document.getElementById('dashboard-crm-content');
+            try {
+                const contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [];
+                if (contacts.length > 0) el.innerHTML = `<p class="text-sm text-white font-bold">${contacts[0].firstName} ${contacts[0].lastName}</p><p class="text-[10px] text-slate-400">${contacts[0].company}</p>`;
+                else el.innerHTML = `<p class="text-xs text-slate-500">No contacts.</p>`;
+            } catch(e) { el.innerHTML = `<p class="text-xs text-slate-500">No data.</p>`; }
+        }
+
+        // --- AI & SEARCH ---
+        async function handleSearch(e) {
+            if(e.key === 'Enter') {
+                const q = e.target.value;
+                if(!q) return;
+                openAiModal('Thinking...');
+                e.target.value = '';
+                const res = await callGemini(`User query: ${q}. Answer concisely in markdown.`);
+                document.getElementById('ai-modal-body').innerHTML = marked.parse(res);
+            }
+        }
+        async function generateDailyBriefing() {
+            openAiModal('Generating Briefing...');
+            const name = document.getElementById('sidebar-username') ? document.getElementById('sidebar-username').innerText : 'Josh';
+            const res = await callGemini(`Give a short, motivational daily briefing for ${name}.`);
+            document.getElementById('ai-modal-body').innerHTML = marked.parse(res);
+        }
+        async function callGemini(prompt) {
+            const key = localStorage.getItem('brain_gemini_key');
+            if(!key) return "Please set API Key in settings.";
+            try {
+                const req = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await req.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch(e) { return "Error connecting to AI."; }
+        }
+
+        // --- MODALS ---
+        function openAiModal(txt) { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-modal-body').innerHTML = `<p class="text-center text-slate-400 animate-pulse">${txt}</p>`; }
+        function closeAiModal() { document.getElementById('ai-modal').classList.add('hidden'); }
         
-        // --- DRAG AND DROP CONFIG FOR MOBILE ---
-        new Sortable(document.getElementById('apps-container'), { 
-            animation: 150, 
-            ghostClass: 'sortable-ghost', 
-            filter: '.static', 
-            delay: 200,                // Wait 200ms before drag starts
-            delayOnTouchOnly: true,    // Only apply delay on touch devices
-            onEnd: function (evt) { 
-                const sortableOrder = []; 
-                document.getElementById('apps-container').querySelectorAll('.app-card').forEach(el => sortableOrder.push(el.getAttribute('data-id'))); 
-                localStorage.setItem('brain_app_order', JSON.stringify(sortableOrder)); 
-            } 
-        });
+        function openModuleModal() { ['mod-title','mod-desc','mod-icon','mod-url'].forEach(id=>document.getElementById(id).value=''); document.getElementById('module-modal').classList.remove('hidden'); }
+        function closeModuleModal() { document.getElementById('module-modal').classList.add('hidden'); }
+        function saveModule() {
+            const title = document.getElementById('mod-title').value;
+            if(!title) return;
+            const newApp = { 
+                id: 'app-'+Date.now(), 
+                title, 
+                desc: document.getElementById('mod-desc').value, 
+                icon: document.getElementById('mod-icon').value || 'ph-cube', 
+                color: 'blue', 
+                url: document.getElementById('mod-url').value 
+            };
+            myApps.push(newApp);
+            localStorage.setItem('brain_apps', JSON.stringify(myApps));
+            renderApps();
+            closeModuleModal();
+        }
+
+        function openSettings() { document.getElementById('settings-modal').classList.remove('hidden'); document.getElementById('settings-name').value = JSON.parse(localStorage.getItem('brain_user'))?.name || 'User'; document.getElementById('settings-api-key').value = localStorage.getItem('brain_gemini_key')||''; }
+        function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+        function saveSettings() {
+            const name = document.getElementById('settings-name').value;
+            localStorage.setItem('brain_user', JSON.stringify({name, email:'user@example.com'}));
+            localStorage.setItem('brain_gemini_key', document.getElementById('settings-api-key').value);
+            loadUserData();
+            closeSettings();
+        }
+        function logout() { localStorage.removeItem('brain_session'); window.location.href='login.html'; }
+
+        function loadUserData() {
+            const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'};
+            const el = document.getElementById('greeting-text');
+            if(el) el.innerText = new Date().getHours() < 12 ? 'Good Morning' : 'Good Afternoon';
+            const nameEl = document.getElementById('sidebar-username');
+            if(nameEl) nameEl.innerText = u.name;
+        }
+
+        init();
     </script>
 </body>
 </html>
