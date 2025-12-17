@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#020617"> <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://fav.farm/🧠">
@@ -12,29 +11,22 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // ?v=4 forces the browser to re-check the file on the server
-          navigator.serviceWorker.register('sw.js?v=4').then(reg => {
-            
-            // Manually check for an update immediately on load
-            reg.update();
-
-            reg.onupdatefound = () => {
-              const installingWorker = reg.installing;
-              installingWorker.onstatechange = () => {
-                if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // If we see a new version, force the user to reload
-                  if(confirm("New System Update (v4) Available! Reload now?")) {
-                      window.location.reload();
-                  }
-                }
-              };
-            };
+          navigator.serviceWorker.register('sw.js?v=5').then(reg => {
+             reg.update();
+             reg.onupdatefound = () => {
+               const newWorker = reg.installing;
+               newWorker.onstatechange = () => {
+                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                   if(confirm("New App Update Available! Load it?")) window.location.reload();
+                 }
+               };
+             };
           });
         });
       }
     </script>
 
-    <title>Josh's Second Brain</title>
+    <title>JoshOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,116 +35,129 @@
     
     <script>
         if (!localStorage.getItem('brain_session')) window.location.href = 'login.html';
-
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        brain: { bg: '#0f172a', surface: '#1e293b', accent: '#38bdf8' }
+                        brain: { bg: '#020617', card: '#0f172a', border: '#1e293b', accent: '#38bdf8' }
                     }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #0f172a; color: white; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        
-        /* Mobile Card Styling */
-        .bento-card {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8));
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px);
-            transition: transform 0.2s;
-        }
-        .bento-card:active { transform: scale(0.96); }
 
-        /* Bottom Navigation Active State */
+        /* Native App-Like Cards */
+        .app-row {
+            background-color: #0f172a; /* Slate 900 */
+            border: 1px solid #1e293b; /* Slate 800 */
+            transition: background-color 0.2s;
+        }
+        .app-row:active { background-color: #1e293b; }
+
+        /* Focus Widget Gradient */
+        .focus-card {
+            background: linear-gradient(135deg, rgba(6, 78, 59, 0.8), rgba(2, 6, 23, 1));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Bottom Nav */
         .nav-item.active { color: #38bdf8; }
-        .nav-item.active i { font-weight: bold; }
-        
-        /* Safe Area Padding for iPhone */
+        .nav-item.active i { weight: fill; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="h-screen flex flex-col overflow-hidden bg-brain-bg">
 
-    <aside class="w-64 bg-brain-surface/90 border-r border-slate-700 hidden md:flex flex-col fixed h-full z-50">
-        <div class="h-20 flex items-center px-6"><i class="ph ph-brain text-brain-accent text-2xl mr-3"></i><span class="font-bold text-lg">JoshOS</span></div>
+    <aside class="w-72 bg-brain-card border-r border-brain-border hidden md:flex flex-col fixed h-full z-50">
+        <div class="h-20 flex items-center px-6"><i class="ph ph-brain text-brain-accent text-3xl mr-3"></i><span class="font-bold text-xl tracking-tight">JoshOS</span></div>
         <nav class="p-4 space-y-2">
-            <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-700/50 rounded-xl text-sm font-medium"><i class="ph ph-squares-four text-lg mr-3"></i> Dashboard</button>
+            <button onclick="goHome()" class="w-full flex items-center h-12 px-4 bg-slate-800 rounded-xl text-sm font-bold text-white"><i class="ph ph-squares-four text-lg mr-3"></i> Dashboard</button>
             <button onclick="openSettings()" class="w-full flex items-center h-12 px-4 hover:bg-slate-800 rounded-xl text-sm font-medium text-slate-400"><i class="ph ph-gear text-lg mr-3"></i> Settings</button>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-64 w-full bg-brain-bg">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative md:ml-72 w-full">
         
-        <header class="h-16 md:h-20 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/90 backdrop-blur border-b border-slate-800/50">
+        <header class="h-16 md:h-20 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/80 backdrop-blur-md border-b border-brain-border/50 sticky top-0">
             <div>
-                <h1 class="text-xl font-bold tracking-tight"><span id="greeting-text" class="text-slate-400 font-normal">Hello,</span> Josh.</h1>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-0.5" id="date-display">WEDNESDAY</p>
+                <h1 class="text-xl font-bold text-white tracking-tight"><span id="greeting-text">Good Afternoon</span>, Josh.</h1>
             </div>
-            <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+            <button onclick="openSettings()" class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shadow-sm">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full">
             </button>
         </header>
 
-        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-32">
+        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-32 space-y-6">
             
-            <div class="relative mb-6">
-                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                <input type="text" id="ai-search-input" placeholder="Search or ask AI..." class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3.5 pl-12 pr-4 text-sm focus:border-brain-accent focus:outline-none placeholder-slate-500 shadow-sm" onkeydown="handleSearch(event)">
+            <div class="relative">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg"></i>
+                <input type="text" id="ai-search-input" placeholder="Search or ask AI..." class="w-full bg-brain-card border border-brain-border rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-brain-accent focus:outline-none shadow-sm" onkeydown="handleSearch(event)">
             </div>
 
-            <div class="space-y-4 mb-8">
-                <div class="bento-card p-5 rounded-3xl relative overflow-hidden" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">Focus</span>
-                        <i class="ph ph-target text-slate-600 text-xl"></i>
+            <div class="focus-card p-5 rounded-3xl relative overflow-hidden shadow-lg" onclick="openApp(myApps.findIndex(a => a.id === 'todo'))">
+                <div class="absolute top-0 right-0 p-4 opacity-10"><i class="ph ph-target text-8xl text-emerald-400"></i></div>
+                <div class="relative z-10">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">Current Focus</span>
                     </div>
                     <div id="dashboard-focus-content">
-                        <p class="text-xl font-bold leading-tight mt-1">Loading tasks...</p>
-                        <p class="text-xs text-slate-400 mt-1">Syncing...</p>
+                        <p class="text-xl font-bold text-white leading-snug">Loading tasks...</p>
+                        <p class="text-xs text-emerald-200/70 mt-1 font-medium">Syncing...</p>
                     </div>
+                    <div class="flex items-center gap-1 mt-4 text-xs text-emerald-300 font-bold"><span>View Task Board</span> <i class="ph ph-arrow-right"></i></div>
                 </div>
-
-                <button onclick="generateDailyBriefing()" class="w-full bento-card p-4 rounded-2xl flex items-center justify-center gap-3 group active:scale-95 transition-transform">
-                    <i class="ph ph-sparkle-fill text-purple-400 text-xl group-hover:scale-110 transition-transform"></i>
-                    <span class="font-semibold text-sm">Daily Briefing</span>
-                </button>
             </div>
 
+            <button onclick="generateDailyBriefing()" class="w-full bg-brain-card border border-brain-border p-4 rounded-2xl flex items-center justify-between group active:scale-95 transition-transform shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+                        <i class="ph ph-sparkle-fill text-white text-lg"></i>
+                    </div>
+                    <div class="text-left">
+                        <h3 class="font-bold text-white text-sm">Daily Briefing</h3>
+                        <p class="text-xs text-slate-400">Tap to generate AI summary</p>
+                    </div>
+                </div>
+                <i class="ph ph-caret-right text-slate-600"></i>
+            </button>
+
             <div>
-                <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-lg font-bold">My Apps</h2>
-                    <button onclick="openModuleModal()" class="text-xs text-brain-accent font-medium bg-brain-accent/10 px-3 py-1.5 rounded-full">Add New</button>
+                <div class="flex justify-between items-end mb-3 px-1">
+                    <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">My Apps</h2>
+                    <button onclick="openModuleModal()" class="text-xs text-brain-accent font-bold">Edit</button>
                 </div>
                 
-                <div id="apps-container" class="space-y-3 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
+                <div id="apps-container" class="space-y-3">
                     </div>
             </div>
         </div>
 
         <div id="view-app-viewer" class="hidden absolute inset-0 bg-brain-bg z-50 flex flex-col h-full w-full">
-            <div class="h-14 bg-slate-900 border-b border-slate-800 flex items-center px-2 shrink-0">
-                <button onclick="goHome()" class="p-3 text-slate-400 hover:text-white"><i class="ph ph-arrow-left text-xl"></i></button>
-                <span id="current-app-title" class="ml-2 font-bold text-sm">App</span>
+            <div class="h-14 bg-brain-card border-b border-brain-border flex items-center justify-between px-2 shrink-0">
+                <button onclick="goHome()" class="p-3 text-slate-400 hover:text-white flex items-center gap-1"><i class="ph ph-caret-left text-lg"></i> Back</button>
+                <span id="current-app-title" class="font-bold text-white text-sm">App</span>
+                <div class="w-12"></div>
             </div>
-            <iframe id="app-frame" class="flex-1 w-full bg-slate-950 border-0"></iframe>
+            <iframe id="app-frame" class="flex-1 w-full bg-black border-0"></iframe>
         </div>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full h-[85px] bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 flex justify-around items-start pt-4 z-40 md:hidden pb-safe">
-        <button onclick="goHome()" class="nav-item active flex flex-col items-center w-16 gap-1.5" id="nav-home">
-            <i class="ph ph-house text-2xl"></i>
-            <span class="text-[10px] font-medium">Home</span>
+    <nav class="fixed bottom-0 left-0 w-full h-[88px] bg-brain-card/95 backdrop-blur-xl border-t border-brain-border flex justify-around items-start pt-4 z-40 md:hidden pb-safe">
+        <button onclick="goHome()" class="nav-item active flex flex-col items-center w-16 gap-1" id="nav-home">
+            <i class="ph ph-house-fill text-2xl"></i>
+            <span class="text-[10px] font-bold">Home</span>
         </button>
-        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1.5" id="nav-ai">
+        <button onclick="generateDailyBriefing()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1" id="nav-ai">
             <i class="ph ph-sparkle text-2xl"></i>
             <span class="text-[10px] font-medium">AI</span>
         </button>
-        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1.5" id="nav-settings">
+        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center w-16 gap-1" id="nav-settings">
             <i class="ph ph-gear text-2xl"></i>
             <span class="text-[10px] font-medium">Settings</span>
         </button>
@@ -160,30 +165,11 @@
 
     <div id="ai-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-end sm:items-center justify-center sm:p-4">
         <div class="bg-slate-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-800 shadow-2xl flex flex-col max-h-[85vh] animate-slide-up">
-            <div class="p-5 border-b border-slate-800 flex justify-between items-center">
-                <h3 class="font-bold text-white flex items-center gap-2"><i class="ph ph-sparkle-fill text-purple-500"></i> Gemini</h3>
+            <div class="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900 rounded-t-3xl">
+                <h3 class="font-bold text-white flex items-center gap-2"><i class="ph ph-sparkle-fill text-purple-500"></i> Gemini AI</h3>
                 <button onclick="closeAiModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400"><i class="ph ph-x"></i></button>
             </div>
             <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-300" id="ai-modal-body"></div>
-        </div>
-    </div>
-
-    <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-        <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
-            <h3 class="font-bold text-lg text-white mb-4">Add Custom App</h3>
-            <div class="space-y-3">
-                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                <input type="text" id="mod-desc" placeholder="Short Description" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                <div class="flex gap-2">
-                    <input type="text" id="mod-icon" placeholder="Icon (ph-cube)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                    <input type="text" id="mod-color" placeholder="Color (blue)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-                </div>
-                <input type="text" id="mod-url" placeholder="File Path (apps/file.html)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
-            </div>
-            <div class="flex gap-3 mt-6">
-                <button onclick="closeModuleModal()" class="flex-1 py-3 bg-slate-800 rounded-xl text-sm font-bold text-slate-400">Cancel</button>
-                <button onclick="saveModule()" class="flex-1 py-3 bg-blue-600 rounded-xl text-sm font-bold text-white">Add App</button>
-            </div>
         </div>
     </div>
 
@@ -191,11 +177,33 @@
         <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
             <h3 class="font-bold text-lg text-white mb-6">Settings</h3>
             <div class="space-y-4">
-                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Your Name</label><input type="text" id="settings-name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1"></div>
-                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1"></div>
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Your Name</label><input type="text" id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1 focus:border-brain-accent focus:outline-none"></div>
+                <div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white mt-1 focus:border-brain-accent focus:outline-none"></div>
                 <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-bold mt-4">Sign Out</button>
             </div>
-            <button onclick="saveSettings()" class="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-bold mt-4">Save Changes</button>
+            <div class="flex gap-3 mt-6">
+                 <button onclick="closeSettings()" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold">Cancel</button>
+                 <button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl text-sm font-bold">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl">
+            <h3 class="font-bold text-lg text-white mb-4">Add App</h3>
+            <div class="space-y-3">
+                <input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                <input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                <div class="flex gap-2">
+                    <input type="text" id="mod-icon" placeholder="Icon (ph-cube)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                    <input type="text" id="mod-color" placeholder="Color (blue)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+                </div>
+                <input type="text" id="mod-url" placeholder="Path (apps/file.html)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-sm text-white">
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeModuleModal()" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl text-sm font-bold">Cancel</button>
+                <button onclick="saveModule()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl text-sm font-bold">Add</button>
+            </div>
         </div>
     </div>
 
@@ -213,16 +221,16 @@
         function init() {
             loadUserData();
             renderApps();
-            
-            // MOBILE-OPTIMIZED DRAG & DROP
+            document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
             new Sortable(document.getElementById('apps-container'), { 
                 animation: 200, 
-                delay: 250, // Long press to drag (prevents click blocking)
+                delay: 250, 
                 delayOnTouchOnly: true,
                 ghostClass: 'opacity-50',
                 onEnd: function (evt) { 
                     const order = []; 
-                    document.getElementById('apps-container').querySelectorAll('.bento-card').forEach(el => order.push(el.getAttribute('data-id'))); 
+                    document.getElementById('apps-container').querySelectorAll('.app-row').forEach(el => order.push(el.getAttribute('data-id'))); 
                     localStorage.setItem('brain_app_order', JSON.stringify(order)); 
                 } 
             });
@@ -231,13 +239,10 @@
         function renderApps() {
             const container = document.getElementById('apps-container');
             container.innerHTML = '';
-            
-            // Reordering Logic
             let savedOrder = JSON.parse(localStorage.getItem('brain_app_order')) || [];
             const appMap = new Map(myApps.map(app => [app.id, app]));
             savedOrder.forEach(id => { if (appMap.has(id)) { renderCard(appMap.get(id)); appMap.delete(id); } });
             appMap.forEach(app => renderCard(app));
-            
             updateFocusWidget();
         }
 
@@ -245,18 +250,20 @@
             const card = document.createElement('div');
             const idx = myApps.findIndex(a => a.id === app.id);
             card.setAttribute('data-id', app.id);
-            // STACKED LIST STYLE FOR MOBILE
-            card.className = `bento-card p-4 rounded-2xl flex items-center gap-4 cursor-pointer active:scale-95 select-none`;
+            // STACKED ROW STYLE - PREMIUM LOOK
+            card.className = `app-row p-4 rounded-2xl flex items-center gap-4 cursor-pointer select-none shadow-sm`;
             card.onclick = () => openApp(idx);
             card.innerHTML = `
                 <div class="w-12 h-12 bg-${app.color}-500/10 rounded-xl flex items-center justify-center text-${app.color}-400 shrink-0 border border-${app.color}-500/20">
                     <i class="ph ${app.icon} text-2xl"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-white text-sm">${app.title}</h3>
-                    <p class="text-xs text-slate-400 truncate">${app.desc}</p>
+                    <h3 class="font-bold text-white text-base leading-tight">${app.title}</h3>
+                    <p class="text-xs text-slate-400 truncate mt-0.5">${app.desc}</p>
                 </div>
-                <i class="ph ph-caret-right text-slate-600"></i>
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
+                    <i class="ph ph-caret-right"></i>
+                </div>
             `;
             document.getElementById('apps-container').appendChild(card);
         }
@@ -266,17 +273,16 @@
             document.getElementById('current-app-title').innerText = app.title;
             const frame = document.getElementById('app-frame');
             frame.src = app.url;
-            
             document.getElementById('view-dashboard').classList.add('hidden');
             document.getElementById('view-app-viewer').classList.remove('hidden');
-            document.querySelector('nav').classList.add('hidden'); // Hide bottom bar
+            document.querySelector('nav').classList.add('hidden'); 
         }
 
         function goHome() {
             document.getElementById('app-frame').src = "";
             document.getElementById('view-dashboard').classList.remove('hidden');
             document.getElementById('view-app-viewer').classList.add('hidden');
-            document.querySelector('nav').classList.remove('hidden'); // Show bottom bar
+            document.querySelector('nav').classList.remove('hidden'); 
             updateFocusWidget();
         }
 
@@ -285,12 +291,12 @@
             try {
                 const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
                 const pending = tasks.filter(t => t.status === 'pending');
-                if (pending.length > 0) el.innerHTML = `<p class="text-lg font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-400">Due: ${pending[0].dueDate}</p>`;
-                else el.innerHTML = `<p class="text-lg text-slate-500 font-medium">All caught up!</p>`;
+                if (pending.length > 0) el.innerHTML = `<p class="text-xl font-bold text-white truncate">${pending[0].title}</p><p class="text-xs text-emerald-200">Due: ${pending[0].dueDate}</p>`;
+                else el.innerHTML = `<p class="text-xl text-slate-400 font-bold">All caught up!</p>`;
             } catch(e) { el.innerHTML = `<p class="text-sm text-slate-500">No tasks found.</p>`; }
         }
 
-        // --- AI STUFF ---
+        // --- AI ---
         async function handleSearch(e) {
             if(e.key === 'Enter') {
                 const q = e.target.value; if(!q) return;
@@ -332,7 +338,7 @@
         function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
         function saveSettings() { localStorage.setItem('brain_user', JSON.stringify({name: document.getElementById('settings-name').value})); localStorage.setItem('brain_gemini_key', document.getElementById('settings-api-key').value); loadUserData(); closeSettings(); }
         function logout() { localStorage.removeItem('brain_session'); window.location.href='login.html'; }
-        function loadUserData() { const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'}; document.getElementById('greeting-text').innerText = new Date().getHours() < 12 ? 'Good Morning,' : 'Good Afternoon,'; }
+        function loadUserData() { const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'}; document.getElementById('greeting-text').innerText = new Date().getHours() < 12 ? 'Good Morning' : 'Good Afternoon'; }
 
         init();
     </script>
