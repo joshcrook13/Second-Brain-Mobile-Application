@@ -2,16 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Josh's Second Brain</title>
-    <link rel="icon" href="https://fav.farm/🧠" />
     
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://fav.farm/🧠">
 
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('JoshOS Registered'))
+            .catch(err => console.log('Error:', err));
+        });
+      }
+    </script>
+
+    <title>Josh's Second Brain</title>
+    <link rel="icon" href="https://fav.farm/🧠" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,15 +32,6 @@
         // --- SECURITY GATEKEEPER ---
         if (!localStorage.getItem('brain_session')) {
             window.location.href = 'login.html';
-        }
-
-        // --- PWA SERVICE WORKER REGISTRATION ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker Registered'))
-                    .catch(err => console.log('Service Worker Error', err));
-            });
         }
 
         tailwind.config = {
@@ -466,7 +467,20 @@
         // --- INIT ---
         document.getElementById('datetime').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         loadUserData(); applyWallpaper(localStorage.getItem('brain_wallpaper')); renderApps();
-        new Sortable(document.getElementById('apps-container'), { animation: 150, ghostClass: 'sortable-ghost', filter: '.static', onEnd: function (evt) { const sortableOrder = []; document.getElementById('apps-container').querySelectorAll('.app-card').forEach(el => sortableOrder.push(el.getAttribute('data-id'))); localStorage.setItem('brain_app_order', JSON.stringify(sortableOrder)); } });
+        
+        // --- DRAG AND DROP CONFIG FOR MOBILE ---
+        new Sortable(document.getElementById('apps-container'), { 
+            animation: 150, 
+            ghostClass: 'sortable-ghost', 
+            filter: '.static', 
+            delay: 200,                // Wait 200ms before drag starts
+            delayOnTouchOnly: true,    // Only apply delay on touch devices
+            onEnd: function (evt) { 
+                const sortableOrder = []; 
+                document.getElementById('apps-container').querySelectorAll('.app-card').forEach(el => sortableOrder.push(el.getAttribute('data-id'))); 
+                localStorage.setItem('brain_app_order', JSON.stringify(sortableOrder)); 
+            } 
+        });
     </script>
 </body>
 </html>
