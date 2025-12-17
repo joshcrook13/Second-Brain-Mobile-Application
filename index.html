@@ -12,13 +12,13 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js?v=9').then(reg => {
+          navigator.serviceWorker.register('sw.js?v=11').then(reg => {
              reg.update();
              reg.onupdatefound = () => {
                const newWorker = reg.installing;
                newWorker.onstatechange = () => {
                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                   if(confirm("New Feature: Quick Capture Forms! Load update?")) window.location.reload();
+                   if(confirm("New Update: Fixed UI & Forms. Reload?")) window.location.reload();
                  }
                };
              };
@@ -61,11 +61,27 @@
         .ticker-wrap { overflow: hidden; white-space: nowrap; }
         .ticker-move { display: inline-block; animation: ticker 30s linear infinite; }
 
-        /* Navigation & FAB */
+        /* Navigation Styles */
+        .nav-item { transition: color 0.2s; }
         .nav-item.active { color: #38bdf8; }
-        .nav-item.active i { weight: fill; }
-        .fab-container { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); background: #020617; padding: 6px; border-radius: 50%; border-top: 1px solid #1e293b; }
-        .fab-btn { width: 56px; height: 56px; background: linear-gradient(135deg, #38bdf8, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4); color: white; font-size: 24px; transition: transform 0.1s; }
+        .nav-item.active i { font-weight: bold; }
+        
+        /* Floating Action Button (FAB) */
+        .fab-container { 
+            position: absolute; top: -24px; left: 50%; transform: translateX(-50%); 
+            background: #020617; padding: 6px; border-radius: 50%; 
+            border-top: 1px solid #1e293b;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.2);
+        }
+        .fab-btn { 
+            width: 56px; height: 56px; 
+            background: linear-gradient(135deg, #38bdf8, #2563eb); 
+            border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4); 
+            color: white; font-size: 28px; 
+            transition: transform 0.1s; 
+        }
         .fab-btn:active { transform: scale(0.9); }
 
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -90,7 +106,7 @@
                 <h1 class="text-xl font-bold text-white"><span id="greeting-text">Hello</span>, Josh.</h1>
             </div>
             <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full" id="header-avatar">
             </button>
         </header>
 
@@ -126,7 +142,7 @@
                 <span class="text-[9px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">NEWS</span>
                 <div class="ticker-wrap flex-1">
                     <div class="ticker-move text-xs text-slate-300 font-medium">
-                        🚀 Tech stocks rally as AI adoption grows  •  🌍 Global climate summit reaches new agreement  •  🧠 JoshOS v9 brings Quick Capture Forms  •  ☕ New productivity hacks trending  • 
+                        🚀 Tech stocks rally as AI adoption grows  •  🌍 Global climate summit reaches new agreement  •  🧠 JoshOS v11 updates UI & Forms  •  ☕ New productivity hacks trending  • 
                     </div>
                 </div>
             </div>
@@ -185,15 +201,34 @@
     </main>
 
     <nav class="fixed bottom-0 left-0 w-full h-[88px] bg-brain-card/95 backdrop-blur-xl border-t border-brain-border flex justify-between items-start px-6 pt-4 z-40 lg:hidden pb-safe">
-        <button onclick="switchTab('dashboard')" class="nav-item active flex flex-col items-center gap-1 w-12" id="nav-dashboard"><i class="ph ph-house-fill text-2xl"></i><span class="text-[10px] font-bold">Home</span></button>
-        <button onclick="switchTab('apps')" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12" id="nav-apps"><i class="ph ph-grid-four text-2xl"></i><span class="text-[10px] font-medium">Apps</span></button>
         
+        <button onclick="switchTab('dashboard')" class="nav-item active flex flex-col items-center gap-1 w-12" id="nav-dashboard">
+            <i class="ph ph-house-fill text-2xl"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+
+        <button onclick="switchTab('apps')" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12" id="nav-apps">
+            <i class="ph ph-grid-four text-2xl"></i>
+            <span class="text-[10px] font-medium">Apps</span>
+        </button>
+
         <div class="relative w-12 flex justify-center">
-            <div class="fab-container"><button onclick="openQuickCapture()" class="fab-btn"><i class="ph ph-plus-bold"></i></button></div>
+            <div class="fab-container">
+                <button onclick="openQuickCapture()" class="fab-btn">
+                    <i class="ph ph-plus-bold text-white"></i>
+                </button>
+            </div>
         </div>
 
-        <button onclick="openAiModal('Thinking...')" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12"><i class="ph ph-sparkle text-2xl"></i><span class="text-[10px] font-medium">AI</span></button>
-        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12"><i class="ph ph-user text-2xl"></i><span class="text-[10px] font-medium">Profile</span></button>
+        <button onclick="openAiModal('Thinking...')" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12">
+            <i class="ph ph-sparkle text-2xl"></i>
+            <span class="text-[10px] font-medium">AI</span>
+        </button>
+
+        <button onclick="openSettings()" class="nav-item text-slate-500 flex flex-col items-center gap-1 w-12">
+            <i class="ph ph-user text-2xl"></i>
+            <span class="text-[10px] font-medium">Profile</span>
+        </button>
     </nav>
 
     <div id="quick-add-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-end justify-center">
@@ -201,20 +236,36 @@
             
             <div id="qa-menu">
                 <h3 class="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">Quick Capture</h3>
-                <div class="grid grid-cols-3 gap-4">
-                    <button onclick="showQaForm('task')" class="flex flex-col items-center gap-2 p-4 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
-                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center text-white"><i class="ph ph-check text-2xl"></i></div>
-                        <span class="text-xs font-bold text-white">Task</span>
+                <div class="grid grid-cols-4 gap-3">
+                    <button onclick="showQaForm('task')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
+                        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white"><i class="ph ph-check text-xl"></i></div>
+                        <span class="text-[10px] font-bold text-white">Task</span>
                     </button>
-                    <button onclick="showQaForm('journal')" class="flex flex-col items-center gap-2 p-4 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
-                        <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="ph ph-pencil-simple text-2xl"></i></div>
-                        <span class="text-xs font-bold text-white">Journal</span>
+                    <button onclick="showQaForm('journal')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
+                        <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="ph ph-pencil-simple text-xl"></i></div>
+                        <span class="text-[10px] font-bold text-white">Journal</span>
                     </button>
-                    <button onclick="showQaForm('food')" class="flex flex-col items-center gap-2 p-4 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
-                        <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white"><i class="ph ph-bowl-food text-2xl"></i></div>
-                        <span class="text-xs font-bold text-white">Food</span>
+                    <button onclick="showQaForm('expense')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white"><i class="ph ph-currency-dollar text-xl"></i></div>
+                        <span class="text-[10px] font-bold text-white">Expense</span>
+                    </button>
+                    <button onclick="showQaForm('food')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform">
+                        <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white"><i class="ph ph-bowl-food text-xl"></i></div>
+                        <span class="text-[10px] font-bold text-white">Food</span>
                     </button>
                 </div>
+            </div>
+
+            <div id="qa-task" class="hidden">
+                <div class="flex justify-between items-center mb-4"><h3 class="text-white font-bold">New Task</h3><button onclick="resetQa()" class="text-xs text-slate-400">Back</button></div>
+                <input type="text" id="t-title" placeholder="Task Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white focus:border-brain-accent focus:outline-none">
+                <input type="date" id="t-date" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white focus:border-brain-accent focus:outline-none">
+                <select id="t-prio" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
+                    <option value="high">High Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+                <button onclick="saveQuickTask()" class="w-full py-3 bg-green-600 rounded-xl font-bold text-white">Save Task</button>
             </div>
 
             <div id="qa-journal" class="hidden">
@@ -229,6 +280,19 @@
                 <button onclick="saveQuickJournal()" class="w-full py-3 bg-purple-600 rounded-xl font-bold text-white">Save Entry</button>
             </div>
 
+            <div id="qa-expense" class="hidden">
+                <div class="flex justify-between items-center mb-4"><h3 class="text-white font-bold">New Expense</h3><button onclick="resetQa()" class="text-xs text-slate-400">Back</button></div>
+                <input type="number" id="e-amount" placeholder="Amount ($)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
+                <input type="text" id="e-desc" placeholder="Description (e.g. Coffee)" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
+                <select id="e-cat" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
+                    <option value="Food">Food</option>
+                    <option value="Transport">Transport</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Bills">Bills</option>
+                </select>
+                <button onclick="saveQuickExpense()" class="w-full py-3 bg-emerald-600 rounded-xl font-bold text-white">Log Expense</button>
+            </div>
+
             <div id="qa-food" class="hidden">
                 <div class="flex justify-between items-center mb-4"><h3 class="text-white font-bold">Restaurant</h3><button onclick="resetQa()" class="text-xs text-slate-400">Back</button></div>
                 <input type="text" id="f-name" placeholder="Restaurant Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white">
@@ -239,15 +303,60 @@
                 <div id="f-rating-box" class="hidden mb-3">
                     <input type="number" id="f-rating" placeholder="Rating (1-5)" max="5" min="1" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
                 </div>
-                <button onclick="saveQuickFood()" class="w-full py-3 bg-orange-600 rounded-xl font-bold text-white">Save Restaurant</button>
+                <button onclick="saveQuickFood()" class="w-full py-3 bg-orange-600 rounded-xl font-bold text-white">Save Place</button>
             </div>
 
             <button onclick="closeQuickCapture()" class="w-full mt-6 py-4 text-slate-500 font-bold border-t border-slate-800">Close</button>
         </div>
     </div>
 
+    <div id="settings-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+            <div class="p-6 border-b border-slate-800 bg-slate-900 z-10">
+                <h3 class="font-bold text-xl text-white">Settings</h3>
+            </div>
+            
+            <div class="p-6 overflow-y-auto space-y-8">
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Profile</h4>
+                    <div class="space-y-3">
+                        <div><label class="text-xs text-slate-400">Display Name</label><input type="text" id="settings-name" class="w-full bg-black border border-slate-800 rounded-lg px-3 py-2 text-white mt-1"></div>
+                        <div><label class="text-xs text-slate-400">Avatar URL</label><input type="text" id="settings-avatar" placeholder="https://..." class="w-full bg-black border border-slate-800 rounded-lg px-3 py-2 text-white mt-1"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">System</h4>
+                    <div class="space-y-3">
+                        <div><label class="text-xs text-slate-400">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-black border border-slate-800 rounded-lg px-3 py-2 text-white mt-1"></div>
+                        <div class="flex items-center justify-between py-2 border-b border-slate-800">
+                            <span class="text-sm text-slate-300">Notifications</span>
+                            <div class="w-10 h-6 bg-green-500 rounded-full flex items-center justify-end px-1"><div class="w-4 h-4 bg-white rounded-full"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Data Management</h4>
+                    <div class="space-y-2">
+                        <button onclick="exportData()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-bold text-slate-300 border border-slate-700 flex items-center justify-center gap-2"><i class="ph ph-download"></i> Export All Data</button>
+                        <button onclick="importData()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-bold text-slate-300 border border-slate-700 flex items-center justify-center gap-2"><i class="ph ph-upload"></i> Import Backup</button>
+                        <input type="file" id="import-file" style="display:none" onchange="processImport(this)">
+                    </div>
+                </div>
+                
+                <button onclick="logout()" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-bold">Sign Out</button>
+                <p class="text-[10px] text-center text-slate-600 pt-2">JoshOS v11.0.1</p>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 flex gap-3 bg-slate-900 z-10">
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold">Cancel</button>
+                <button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <div id="ai-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-end sm:items-center justify-center sm:p-4"><div class="bg-slate-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-800 shadow-2xl flex flex-col max-h-[85vh]"><div class="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-900 rounded-t-3xl"><h3 class="font-bold text-white">Gemini AI</h3><button onclick="document.getElementById('ai-modal').classList.add('hidden')"><i class="ph ph-x text-slate-400"></i></button></div><div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-300" id="ai-modal-body"></div></div></div>
-    <div id="settings-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6"><div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl"><h3 class="font-bold text-lg text-white mb-6">Settings</h3><div class="space-y-4"><div><label class="text-xs text-slate-500 font-bold uppercase ml-1">Name</label><input type="text" id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><div><label class="text-xs text-slate-500 font-bold uppercase ml-1">API Key</label><input type="password" id="settings-api-key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><button onclick="localStorage.removeItem('brain_session');window.location.href='login.html'" class="w-full py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl text-sm font-bold mt-4">Sign Out</button></div><div class="flex gap-3 mt-6"><button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold">Cancel</button><button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Save</button></div></div></div>
     <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6"><div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl"><h3 class="font-bold text-xl text-white mb-4">Add App</h3><div class="space-y-3"><input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><div class="flex gap-2"><input type="text" id="mod-icon" placeholder="Icon" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="text" id="mod-color" placeholder="Color" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><input type="text" id="mod-url" placeholder="Path" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><div class="flex gap-3 mt-6"><button onclick="document.getElementById('module-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold">Cancel</button><button onclick="saveModule()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Add</button></div></div></div>
 
     <script>
@@ -268,77 +377,97 @@
             fetchWeather();
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase();
             
-            // Listen for status change in food form
             document.getElementById('f-status').addEventListener('change', function() {
                 document.getElementById('f-rating-box').style.display = this.value === 'visited' ? 'block' : 'none';
             });
+            document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
         }
 
         // --- QUICK CAPTURE LOGIC ---
-        function openQuickCapture() {
-            resetQa();
-            document.getElementById('quick-add-modal').classList.remove('hidden');
-        }
+        function openQuickCapture() { resetQa(); document.getElementById('quick-add-modal').classList.remove('hidden'); }
         function closeQuickCapture() { document.getElementById('quick-add-modal').classList.add('hidden'); }
         function resetQa() {
             document.getElementById('qa-menu').classList.remove('hidden');
-            document.getElementById('qa-journal').classList.add('hidden');
-            document.getElementById('qa-food').classList.add('hidden');
+            ['qa-task','qa-journal','qa-expense','qa-food'].forEach(id => document.getElementById(id).classList.add('hidden'));
             // Clear inputs
+            document.getElementById('t-title').value = '';
             document.getElementById('j-title').value = ''; document.getElementById('j-body').value = '';
+            document.getElementById('e-amount').value = ''; document.getElementById('e-desc').value = '';
             document.getElementById('f-name').value = ''; document.getElementById('f-rating').value = '';
         }
         function showQaForm(type) {
             document.getElementById('qa-menu').classList.add('hidden');
-            if (type === 'task') {
-                closeQuickCapture();
-                setTimeout(() => {
-                    const title = prompt("New Task Name:");
-                    if(title) {
-                        const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
-                        tasks.push({ id: Date.now(), title, status: 'pending', priority: 'medium', dueDate: new Date().toISOString().split('T')[0] });
-                        localStorage.setItem('tm_tasks', JSON.stringify(tasks));
-                        updateFocusWidget();
-                        alert("Task Added!");
-                    }
-                }, 100);
-            } else if (type === 'journal') {
-                document.getElementById('qa-journal').classList.remove('hidden');
-            } else if (type === 'food') {
-                document.getElementById('qa-food').classList.remove('hidden');
-            }
+            document.getElementById(`qa-${type}`).classList.remove('hidden');
         }
         
-        function setMood(mood) { selectedMood = mood; alert('Mood set to: ' + mood); }
+        function saveQuickTask() {
+            const title = document.getElementById('t-title').value;
+            const date = document.getElementById('t-date').value;
+            const prio = document.getElementById('t-prio').value;
+            if(!title) return alert("Task Name Required");
+            const tasks = JSON.parse(localStorage.getItem('tm_tasks')) || [];
+            tasks.push({ id: Date.now(), title, status: 'pending', priority: prio, dueDate: date });
+            localStorage.setItem('tm_tasks', JSON.stringify(tasks));
+            closeQuickCapture(); updateFocusWidget(); alert("Task Saved!");
+        }
 
+        function setMood(mood) { selectedMood = mood; alert('Mood: ' + mood); }
         function saveQuickJournal() {
             const title = document.getElementById('j-title').value;
             const body = document.getElementById('j-body').value;
-            if(!title || !body) return alert("Please fill in both fields.");
-            
+            if(!title) return alert("Title Required");
             const entries = JSON.parse(localStorage.getItem('jn_entries')) || [];
             entries.unshift({ id: Date.now(), title, body, date: new Date().toISOString(), mood: selectedMood });
             localStorage.setItem('jn_entries', JSON.stringify(entries));
-            
-            closeQuickCapture();
-            alert("Journal Entry Saved!");
+            closeQuickCapture(); alert("Entry Saved!");
+        }
+
+        function saveQuickExpense() {
+            const amount = document.getElementById('e-amount').value;
+            const desc = document.getElementById('e-desc').value;
+            const cat = document.getElementById('e-cat').value;
+            if(!amount) return alert("Amount Required");
+            const txs = JSON.parse(localStorage.getItem('fin_transactions')) || [];
+            txs.unshift({ id: Date.now(), amount: parseFloat(amount), category: cat, description: desc, date: new Date().toISOString(), type: 'expense' });
+            localStorage.setItem('fin_transactions', JSON.stringify(txs));
+            closeQuickCapture(); alert("Expense Logged!");
         }
 
         function saveQuickFood() {
             const name = document.getElementById('f-name').value;
             const status = document.getElementById('f-status').value;
             const rating = document.getElementById('f-rating').value;
-            if(!name) return alert("Restaurant Name is required.");
-            
+            if(!name) return alert("Name Required");
             const places = JSON.parse(localStorage.getItem('journal_restaurants')) || [];
             places.unshift({ id: Date.now(), name, status, rating: status === 'visited' ? rating : null, date: new Date().toISOString() });
             localStorage.setItem('journal_restaurants', JSON.stringify(places));
-            
-            closeQuickCapture();
-            alert("Restaurant Saved!");
+            closeQuickCapture(); alert("Restaurant Saved!");
         }
 
-        // --- STANDARD LOGIC (Weather, Tabs, etc) ---
+        // --- DATA MANAGEMENT ---
+        function exportData() {
+            const data = { ...localStorage };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `JoshOS_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click(); URL.revokeObjectURL(url);
+        }
+        function importData() { document.getElementById('import-file').click(); }
+        function processImport(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+                    alert("Data Restored Successfully!"); window.location.reload();
+                } catch(err) { alert("Invalid Backup File"); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- STANDARD LOGIC ---
         async function fetchWeather() {
             try {
                 const req = await fetch('https://api.open-meteo.com/v1/forecast?latitude=51.5&longitude=-0.1&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FLondon');
@@ -363,9 +492,10 @@
         function openApp(index) { const app = myApps[index]; document.getElementById('current-app-title').innerText = app.title; document.getElementById('app-frame').src = app.url; ['view-dashboard', 'view-apps'].forEach(id => document.getElementById(id).classList.add('hidden')); document.getElementById('view-app-viewer').classList.remove('hidden'); document.querySelector('nav').classList.add('hidden'); }
         function renderApps() { const c = document.getElementById('apps-container'); c.innerHTML=''; myApps.forEach((app,i) => { const d=document.createElement('div'); d.className=`p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-4 cursor-pointer active:bg-slate-800`; d.onclick=()=>openApp(i); d.innerHTML=`<div class="w-12 h-12 bg-${app.color}-500/10 rounded-xl flex items-center justify-center text-${app.color}-400 shrink-0 border border-${app.color}-500/20"><i class="ph ${app.icon} text-2xl"></i></div><div class="flex-1"><h3 class="font-bold text-white text-base">${app.title}</h3><p class="text-xs text-slate-400">${app.desc}</p></div><i class="ph ph-caret-right text-slate-600"></i>`; c.appendChild(d); }); updateFocusWidget(); }
         function updateFocusWidget() { const el=document.getElementById('dashboard-focus-content'); try { const t=JSON.parse(localStorage.getItem('tm_tasks'))||[]; const p=t.filter(x=>x.status==='pending'); if(p.length>0) el.innerHTML=`<p class="text-xl font-bold text-white truncate">${p[0].title}</p><p class="text-xs text-brain-accent mt-1">Due: ${p[0].dueDate}</p>`; else el.innerHTML=`<p class="text-xl text-slate-400 font-bold">All caught up!</p>`; } catch(e){ el.innerHTML=`<p class="text-sm text-slate-500">No tasks found.</p>`; } }
-        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');document.getElementById('settings-name').value=JSON.parse(localStorage.getItem('brain_user'))?.name||'User';document.getElementById('settings-api-key').value=localStorage.getItem('brain_gemini_key')||'';}
-        function saveSettings(){localStorage.setItem('brain_user',JSON.stringify({name:document.getElementById('settings-name').value}));localStorage.setItem('brain_gemini_key',document.getElementById('settings-api-key').value);loadUserData();document.getElementById('settings-modal').classList.add('hidden');}
-        function loadUserData(){const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'Josh'};document.getElementById('greeting-text').innerText=new Date().getHours()<12?'Good Morning':'Good Afternoon';}
+        function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'User'};document.getElementById('settings-name').value=u.name;document.getElementById('settings-avatar').value=u.avatar||'';document.getElementById('settings-api-key').value=localStorage.getItem('brain_gemini_key')||'';}
+        function saveSettings(){const name=document.getElementById('settings-name').value;const avatar=document.getElementById('settings-avatar').value;localStorage.setItem('brain_user',JSON.stringify({name,avatar}));localStorage.setItem('brain_gemini_key',document.getElementById('settings-api-key').value);loadUserData();document.getElementById('settings-modal').classList.add('hidden');}
+        function logout() { localStorage.removeItem('brain_session'); window.location.href='login.html'; }
+        function loadUserData(){const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'Josh'};document.getElementById('greeting-text').innerText=new Date().getHours()<12?'Good Morning':'Good Afternoon';if(u.avatar)document.getElementById('header-avatar').src=u.avatar;}
         function openModuleModal(){document.getElementById('module-modal').classList.remove('hidden');}
         function saveModule(){const t=document.getElementById('mod-title').value;if(!t)return;const n={id:'app-'+Date.now(),title:t,desc:document.getElementById('mod-desc').value,icon:document.getElementById('mod-icon').value||'ph-cube',color:'blue',url:document.getElementById('mod-url').value};myApps.push(n);localStorage.setItem('brain_apps',JSON.stringify(myApps));renderApps();document.getElementById('module-modal').classList.add('hidden');}
         async function handleSearch(e){if(e.key==='Enter'){const q=e.target.value;if(!q)return;openAiModal('Thinking...');e.target.value='';const r=await callGemini(`User query: ${q}. Answer concisely in markdown.`);document.getElementById('ai-modal-body').innerHTML=marked.parse(r);}}
