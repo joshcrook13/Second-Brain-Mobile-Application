@@ -11,17 +11,25 @@
 
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js?v=11').then(reg => {
-             reg.update();
-             reg.onupdatefound = () => {
-               const newWorker = reg.installing;
-               newWorker.onstatechange = () => {
-                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                   if(confirm("New Update: Fixed UI & Forms. Reload?")) window.location.reload();
-                 }
-               };
-             };
+        window.addEventListener('load', async () => {
+          // 1. Get all existing service workers
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          
+          // 2. Unregister them all (Force kill the old version)
+          for(let registration of registrations) {
+            await registration.unregister();
+            console.log('Old Service Worker Killed 💀');
+          }
+
+          // 3. Register the NEW one with a unique ID
+          navigator.serviceWorker.register('sw.js?v=12').then(reg => {
+             console.log('New Service Worker Registered ✨');
+             
+             // 4. Force reload if we just killed an old one
+             if (registrations.length > 0 && !sessionStorage.getItem('reloaded')) {
+                 sessionStorage.setItem('reloaded', 'true');
+                 window.location.reload();
+             }
           });
         });
       }
@@ -142,7 +150,7 @@
                 <span class="text-[9px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">NEWS</span>
                 <div class="ticker-wrap flex-1">
                     <div class="ticker-move text-xs text-slate-300 font-medium">
-                        🚀 Tech stocks rally as AI adoption grows  •  🌍 Global climate summit reaches new agreement  •  🧠 JoshOS v11 updates UI & Forms  •  ☕ New productivity hacks trending  • 
+                        🚀 Tech stocks rally as AI adoption grows  •  🌍 Global climate summit reaches new agreement  •  🧠 JoshOS v12 updates UI & Forms  •  ☕ New productivity hacks trending  • 
                     </div>
                 </div>
             </div>
