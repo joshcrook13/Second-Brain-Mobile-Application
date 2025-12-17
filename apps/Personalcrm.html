@@ -2,1069 +2,319 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal CRM & Calendar</title>
-    
-    <!-- React & DOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    
-    <!-- Tailwind -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Personal CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        slate: { 850: '#151f32', 900: '#0f172a' },
-                        brand: { 500: '#6366f1', 600: '#4f46e5' } // Indigo brand for CRM
-                    }
+                    colors: { crm: { bg: '#020617', card: '#1e293b', accent: '#6366f1', text: '#f8fafc' } }
                 }
             }
         }
     </script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        body { background-color: #020617; color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
         
-        /* Modal Animation */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
-        .modal-content { animation: slideUp 0.3s ease-out forwards; }
+        /* Modern Input Styles */
+        .glass-input {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+        .glass-input:focus { outline: none; border-color: #6366f1; background: rgba(30, 41, 59, 0.8); }
+
+        /* Tab Active State */
+        .tab-btn.active { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .tab-btn { background-color: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.05); color: #94a3b8; }
+        
+        /* Status Tags */
+        .tag-overdue { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .tag-good { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3); }
     </style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+    <header class="h-16 flex items-center justify-between px-5 bg-[#020617]/95 backdrop-blur-md border-b border-slate-800 shrink-0 z-20">
+        <h1 class="text-lg font-bold flex items-center gap-2">
+            <i class="ph ph-users-three text-indigo-500 text-xl"></i> CRM
+        </h1>
+        <button onclick="openModal()" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
+            <i class="ph ph-plus-bold"></i>
+        </button>
+    </header>
 
-        // --- 1. ENHANCED DATABASE SERVICE ---
-        
-        const getDateStr = (offsetDays) => {
-            const d = new Date();
-            d.setDate(d.getDate() + offsetDays);
-            return d.toISOString().split('T')[0];
-        };
+    <div class="px-5 pt-4 pb-2 shrink-0">
+        <div class="flex gap-2">
+            <button onclick="switchView('dashboard')" id="tab-dashboard" class="tab-btn active flex-1 py-2 rounded-xl text-xs font-bold transition-all">Dashboard</button>
+            <button onclick="switchView('contacts')" id="tab-contacts" class="tab-btn flex-1 py-2 rounded-xl text-xs font-bold transition-all">Contacts</button>
+            <button onclick="switchView('calendar')" id="tab-calendar" class="tab-btn flex-1 py-2 rounded-xl text-xs font-bold transition-all">Calendar</button>
+        </div>
+    </div>
 
-        const SEED_CONTACTS = [
-            { id: 'c1', firstName: 'Sarah', lastName: 'Connor', email: 'sarah@techcorp.com', phone: '555-0101', company: 'TechCorp', jobTitle: 'CTO', relationshipStage: 'warm', lastContactAt: getDateStr(-35), cadenceDays: 30, tags: ['network', 'tech'] },
-            { id: 'c2', firstName: 'John', lastName: 'Smith', email: 'john@design.co', phone: '555-0102', company: 'Freelance', jobTitle: 'Designer', relationshipStage: 'active', lastContactAt: getDateStr(-5), cadenceDays: 90, tags: ['friend'] },
-            { id: 'c3', firstName: 'Emily', lastName: 'Chen', email: 'emily@startup.io', phone: '555-0103', company: 'StartUp Inc', jobTitle: 'Founder', relationshipStage: 'dormant', lastContactAt: getDateStr(-120), cadenceDays: 60, tags: ['founder', 'mentor'] }
-        ];
+    <main class="flex-1 overflow-y-auto p-5 pb-24 hide-scroll relative">
 
-        const SEED_INTERACTIONS = [
-            { id: 'i1', contactId: 'c1', type: 'coffee', date: getDateStr(-35), notes: 'Discussed AI trends and future projects.' },
-            { id: 'i2', contactId: 'c2', type: 'call', date: getDateStr(-5), notes: 'Quick catch up on design specs.' },
-            { id: 'i3', contactId: 'c1', type: 'lunch', date: getDateStr(2), notes: 'Scheduled lunch meeting.' } 
-        ];
-
-        const SEED_TASKS = [
-            { id: 't1', contactId: 'c3', title: 'Reconnect with Emily', dueAt: getDateStr(-2), isDone: false },
-            { id: 't2', contactId: 'c1', title: 'Monthly Check-in', dueAt: getDateStr(5), isDone: false }
-        ];
-
-        const db = {
-            get: (key) => JSON.parse(localStorage.getItem(`crm_${key}`)) || [],
-            set: (key, val) => localStorage.setItem(`crm_${key}`, JSON.stringify(val)),
-            update: (key, id, payload) => {
-                const items = db.get(key);
-                const updated = items.map(i => i.id === id ? { ...i, ...payload } : i);
-                db.set(key, updated);
-                return updated;
-            },
-            remove: (key, id) => {
-                const items = db.get(key);
-                const updated = items.filter(i => i.id !== id);
-                db.set(key, updated);
-                return updated;
-            },
-            add: (key, item) => {
-                const items = db.get(key);
-                const updated = [item, ...items];
-                db.set(key, updated);
-                return updated;
-            },
-            init: () => {
-                if (!localStorage.getItem('crm_contacts')) {
-                    db.set('contacts', SEED_CONTACTS);
-                    db.set('interactions', SEED_INTERACTIONS);
-                    db.set('tasks', SEED_TASKS);
-                }
-            }
-        };
-
-        db.init();
-
-        // --- 2. UI COMPONENTS ---
-
-        const Card = ({ children, className = "" }) => (
-            <div className={`glass rounded-xl p-6 ${className}`}>{children}</div>
-        );
-
-        const Badge = ({ children, color = "blue" }) => {
-            const colors = {
-                blue: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-                green: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-                red: "bg-red-500/20 text-red-300 border-red-500/30",
-                gray: "bg-slate-700 text-slate-300 border-slate-600",
-                indigo: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
-                orange: "bg-orange-500/20 text-orange-300 border-orange-500/30"
-            };
-            return (
-                <span className={`px-2 py-1 rounded text-xs font-medium border ${colors[color] || colors.gray}`}>
-                    {children}
-                </span>
-            );
-        };
-
-        const Button = ({ children, onClick, variant = 'primary', className = '' }) => {
-            const baseStyle = "px-4 py-2 rounded-lg font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
-            const variants = {
-                primary: "bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-indigo-500/20",
-                secondary: "bg-slate-700 hover:bg-slate-600 text-white",
-                danger: "bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20",
-                ghost: "text-slate-400 hover:text-white"
-            };
-            return <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`}>{children}</button>;
-        };
-
-        const Modal = ({ isOpen, onClose, title, children }) => {
-            if (!isOpen) return null;
-            return (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
-                    <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg relative z-10 modal-content overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
-                            <h3 className="text-lg font-bold text-white">{title}</h3>
-                            <button onClick={onClose} className="text-slate-400 hover:text-white"><i className="ph ph-x text-lg"></i></button>
-                        </div>
-                        <div className="p-6 overflow-y-auto">
-                            {children}
-                        </div>
+        <div id="view-dashboard" class="space-y-6 animate-fade-in">
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="ph ph-warning-circle text-red-400"></i>
+                        <span class="text-xs text-slate-400 font-bold uppercase">Attention</span>
                     </div>
+                    <p class="text-3xl font-bold text-white" id="stat-overdue">0</p>
+                    <p class="text-[10px] text-slate-500">Overdue connections</p>
                 </div>
-            );
-        };
-
-        const Input = ({ label, value, onChange, type = "text", placeholder, required }) => (
-            <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label} {required && '*'}</label>
-                <input 
-                    type={type} 
-                    value={value} 
-                    onChange={e => onChange(e.target.value)} 
-                    placeholder={placeholder}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none transition-colors text-white"
-                />
-            </div>
-        );
-
-        const Select = ({ label, value, onChange, options }) => (
-            <div className="mb-4">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
-                <select 
-                    value={value} 
-                    onChange={e => onChange(e.target.value)} 
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none transition-colors text-white"
-                >
-                    {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </select>
-            </div>
-        );
-
-        // --- 3. FORMS ---
-
-        // NEW: Notification Modal Content
-        const NotificationList = ({ dueContacts, onPlanInteraction }) => {
-            if (dueContacts.length === 0) {
-                return (
-                    <div className="text-center py-10">
-                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i className="ph ph-check text-green-400 text-3xl"></i>
-                        </div>
-                        <h3 className="text-white font-bold mb-2">All Caught Up!</h3>
-                        <p className="text-slate-400 text-sm">You are in sync with your network.</p>
+                <div class="bg-slate-800/50 border border-slate-700/50 p-4 rounded-2xl">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="ph ph-users text-indigo-400"></i>
+                        <span class="text-xs text-slate-400 font-bold uppercase">Total</span>
                     </div>
-                );
-            }
-
-            return (
-                <div className="space-y-4">
-                    <p className="text-sm text-slate-400">These contacts have exceeded their interaction cadence.</p>
-                    {dueContacts.map(c => {
-                        const last = new Date(c.lastContactAt);
-                        const next = new Date(last);
-                        next.setDate(last.getDate() + c.cadenceDays);
-                        const daysOverdue = Math.ceil((new Date() - next) / (1000 * 60 * 60 * 24));
-
-                        return (
-                            <div key={c.id} className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 flex justify-between items-center group hover:border-brand-500/50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white">
-                                        {c.firstName[0]}{c.lastName[0]}
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-white">{c.firstName} {c.lastName}</h4>
-                                        <p className="text-xs text-orange-400 font-medium">
-                                            Overdue by {daysOverdue > 0 ? daysOverdue : 0} days
-                                        </p>
-                                    </div>
-                                </div>
-                                <Button onClick={() => onPlanInteraction(c.id)} className="text-xs px-3 py-1">Plan Interaction</Button>
-                            </div>
-                        );
-                    })}
+                    <p class="text-3xl font-bold text-white" id="stat-total">0</p>
+                    <p class="text-[10px] text-slate-500">Active contacts</p>
                 </div>
-            );
-        };
+            </div>
 
-        const QuickAddForm = ({ contacts, onSave, onClose, initialDate, initialMode, initialContactId }) => {
-            const [mode, setMode] = useState(initialMode || 'interaction');
-            const [contactId, setContactId] = useState(initialContactId || ((contacts && contacts.length > 0) ? contacts[0].id : ''));
-            const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
-            const [title, setTitle] = useState('');
-            const [notes, setNotes] = useState('');
-            const [type, setType] = useState('call');
+            <div>
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Reach Out Today</h2>
+                <div id="urgent-list" class="space-y-3">
+                    <p class="text-sm text-slate-500 italic">Everyone is up to date! 🎉</p>
+                </div>
+            </div>
+        </div>
 
-            const handleSubmit = () => {
-                if (!contactId) return alert("Please select a contact");
-                
-                if (mode === 'task') {
-                    if (!title) return alert("Task title required");
-                    onSave({ mode: 'task', contactId, title, dueAt: date });
-                } else {
-                    onSave({ mode: 'interaction', contactId, type, date, notes });
-                }
-            };
+        <div id="view-contacts" class="hidden space-y-4">
+            <div class="relative">
+                <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                <input type="text" id="search-input" onkeyup="renderContacts()" placeholder="Search network..." class="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500">
+            </div>
 
-            return (
+            <div id="contacts-list" class="space-y-2">
+                </div>
+        </div>
+
+        <div id="view-calendar" class="hidden space-y-4">
+             <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-3">Upcoming Catch-ups</h2>
+             <div id="calendar-list" class="space-y-3">
+                 </div>
+        </div>
+
+    </main>
+
+    <div id="crm-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-50 flex items-end sm:items-center justify-center sm:p-4">
+        <div class="bg-slate-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-800 p-6 shadow-2xl animate-slide-up">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg text-white">Add Contact</h3>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-4">
                 <div>
-                    <div className="flex bg-slate-900 p-1 rounded-lg mb-6">
-                        <button onClick={() => setMode('interaction')} className={`flex-1 py-1 text-sm rounded transition-colors ${mode === 'interaction' ? 'bg-brand-600 text-white' : 'text-slate-400'}`}>Log Interaction</button>
-                        <button onClick={() => setMode('task')} className={`flex-1 py-1 text-sm rounded transition-colors ${mode === 'task' ? 'bg-brand-600 text-white' : 'text-slate-400'}`}>Add Task</button>
+                    <label class="text-xs text-slate-500 font-bold uppercase ml-1">Name</label>
+                    <input type="text" id="inp-name" class="glass-input w-full px-4 py-3 mt-1" placeholder="e.g. John Doe">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs text-slate-500 font-bold uppercase ml-1">Role/Tag</label>
+                        <input type="text" id="inp-role" class="glass-input w-full px-4 py-3 mt-1" placeholder="e.g. Mentor">
                     </div>
-
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact</label>
-                        <select 
-                            value={contactId} 
-                            onChange={e => setContactId(e.target.value)} 
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none transition-colors text-white"
-                        >
-                            {contacts.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+                    <div>
+                        <label class="text-xs text-slate-500 font-bold uppercase ml-1">Frequency</label>
+                        <select id="inp-freq" class="glass-input w-full px-4 py-3 mt-1">
+                            <option value="7">Weekly</option>
+                            <option value="14">Bi-Weekly</option>
+                            <option value="30" selected>Monthly</option>
+                            <option value="90">Quarterly</option>
                         </select>
                     </div>
-
-                    <Input label={mode === 'task' ? 'Due Date' : 'Date'} type="date" value={date} onChange={setDate} />
-
-                    {mode === 'task' ? (
-                        <Input label="Task Title" value={title} onChange={setTitle} placeholder="e.g. Follow up email" />
-                    ) : (
-                        <React.Fragment>
-                            <Select label="Type" value={type} onChange={setType} options={[
-                                {value: 'call', label: 'Call'}, {value: 'coffee', label: 'Coffee'}, {value: 'email', label: 'Email'}, {value: 'meeting', label: 'Meeting'}
-                            ]} />
-                            <div className="mb-4">
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notes</label>
-                                <textarea className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none text-white h-24" value={notes} onChange={e => setNotes(e.target.value)}></textarea>
-                            </div>
-                        </React.Fragment>
-                    )}
-
-                    <div className="flex gap-2 mt-6">
-                        <Button onClick={handleSubmit} className="flex-1">Save</Button>
-                        <Button onClick={onClose} variant="secondary">Cancel</Button>
-                    </div>
                 </div>
-            );
-        };
 
-        const ContactForm = ({ initialData, onSave, onClose }) => {
-            const [formData, setFormData] = useState(initialData || {
-                firstName: '', lastName: '', company: '', jobTitle: '', email: '', phone: '', relationshipStage: 'new', cadenceDays: 30, tags: ''
+                <div>
+                    <label class="text-xs text-slate-500 font-bold uppercase ml-1">Last Contacted</label>
+                    <input type="date" id="inp-last" class="glass-input w-full px-4 py-3 mt-1">
+                </div>
+            </div>
+
+            <button onclick="saveContact()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-bold mt-8 shadow-lg shadow-indigo-500/20">Save to Network</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA LOGIC ---
+        // Load contacts from LocalStorage (or use dummy data)
+        let contacts = JSON.parse(localStorage.getItem('crm_contacts')) || [
+            { id: 1, name: "Sarah Miller", role: "Mentor", freq: 30, last: "2023-10-01", color: "purple" },
+            { id: 2, name: "David Chen", role: "Client", freq: 14, last: new Date().toISOString().split('T')[0], color: "blue" },
+            { id: 3, name: "Mom", role: "Family", freq: 7, last: "2023-11-15", color: "pink" }
+        ];
+
+        function init() {
+            renderDashboard();
+            renderContacts();
+            renderCalendar();
+            // Set date input default to today
+            document.getElementById('inp-last').value = new Date().toISOString().split('T')[0];
+        }
+
+        // --- NAVIGATION ---
+        function switchView(viewName) {
+            // Hide all views
+            ['dashboard', 'contacts', 'calendar'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`tab-${v}`).classList.remove('active');
+            });
+            // Show selected
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.getElementById(`tab-${viewName}`).classList.add('active');
+        }
+
+        // --- RENDERERS ---
+
+        function renderDashboard() {
+            const now = moment();
+            let overdueCount = 0;
+            const urgentContainer = document.getElementById('urgent-list');
+            urgentContainer.innerHTML = '';
+
+            // Calculate overdue
+            const overdueList = contacts.filter(c => {
+                const lastContact = moment(c.last);
+                const nextDue = lastContact.add(c.freq, 'days');
+                return now.isAfter(nextDue);
             });
 
-            const handleSubmit = () => {
-                if(!formData.firstName) return alert('First Name is required');
-                const payload = {
-                    ...formData,
-                    tags: typeof formData.tags === 'string' ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : formData.tags
-                };
-                onSave(payload);
-            };
+            overdueCount = overdueList.length;
+            document.getElementById('stat-overdue').innerText = overdueCount;
+            document.getElementById('stat-total').innerText = contacts.length;
 
-            return (
-                <div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="First Name" value={formData.firstName} onChange={v => setFormData({...formData, firstName: v})} required />
-                        <Input label="Last Name" value={formData.lastName} onChange={v => setFormData({...formData, lastName: v})} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Company" value={formData.company} onChange={v => setFormData({...formData, company: v})} />
-                        <Input label="Job Title" value={formData.jobTitle} onChange={v => setFormData({...formData, jobTitle: v})} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Input label="Email" value={formData.email} onChange={v => setFormData({...formData, email: v})} />
-                        <Input label="Phone" value={formData.phone} onChange={v => setFormData({...formData, phone: v})} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Select label="Stage" value={formData.relationshipStage} onChange={v => setFormData({...formData, relationshipStage: v})} 
-                            options={[
-                                {value: 'new', label: 'New'},
-                                {value: 'warm', label: 'Warm'},
-                                {value: 'active', label: 'Active'},
-                                {value: 'dormant', label: 'Dormant'}
-                            ]} 
-                        />
-                        <Input label="Notification Cadence (Days)" type="number" value={formData.cadenceDays} onChange={v => setFormData({...formData, cadenceDays: parseInt(v)})} />
-                    </div>
-                    <Input label="Tags (comma separated)" value={Array.isArray(formData.tags) ? formData.tags.join(', ') : formData.tags} onChange={v => setFormData({...formData, tags: v})} />
-                    
-                    <div className="flex gap-2 mt-6">
-                        <Button onClick={handleSubmit} className="flex-1">Save Contact</Button>
-                        <Button onClick={onClose} variant="secondary">Cancel</Button>
-                    </div>
-                </div>
-            );
-        };
-
-        const InteractionForm = ({ contactId, onSave, onClose }) => {
-            const [formData, setFormData] = useState({
-                type: 'call', date: new Date().toISOString().split('T')[0], notes: '', createFollowUp: false
-            });
-
-            return (
-                <div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <Select label="Type" value={formData.type} onChange={v => setFormData({...formData, type: v})} 
-                            options={[
-                                {value: 'call', label: 'Call'},
-                                {value: 'coffee', label: 'Coffee'},
-                                {value: 'email', label: 'Email'},
-                                {value: 'meeting', label: 'Meeting'},
-                                {value: 'dinner', label: 'Dinner'}
-                            ]} 
-                        />
-                        <Input label="Date" type="date" value={formData.date} onChange={v => setFormData({...formData, date: v})} />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Notes</label>
-                        <textarea 
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none transition-colors text-white h-24"
-                            value={formData.notes}
-                            onChange={e => setFormData({...formData, notes: e.target.value})}
-                        ></textarea>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-6">
-                        <Button onClick={() => onSave(formData)} className="flex-1">Log Interaction</Button>
-                        <Button onClick={onClose} variant="secondary">Cancel</Button>
-                    </div>
-                </div>
-            );
-        };
-
-        const ImportForm = ({ onSave, onClose }) => {
-            const [csvData, setCsvData] = useState("");
-
-            const handleImport = () => {
-                const lines = csvData.trim().split('\n');
-                if (lines.length === 0) return;
-
-                const newContacts = lines.map(line => {
-                    const [firstName, lastName, company, email] = line.split(',').map(s => s.trim());
-                    return {
-                        id: 'c' + Date.now() + Math.random().toString(36).substr(2, 5),
-                        firstName: firstName || 'Unknown',
-                        lastName: lastName || '',
-                        company: company || '',
-                        email: email || '',
-                        jobTitle: '', relationshipStage: 'new', cadenceDays: 30, tags: ['imported'], lastContactAt: null
-                    };
+            if (overdueCount === 0) {
+                urgentContainer.innerHTML = `<div class="p-6 text-center border border-dashed border-slate-700 rounded-2xl"><i class="ph ph-check-circle text-4xl text-emerald-500 mb-2"></i><p class="text-sm text-slate-400">All caught up!</p></div>`;
+            } else {
+                overdueList.forEach(c => {
+                    const diff = moment().diff(moment(c.last), 'days');
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-4 bg-slate-800 border border-slate-700 rounded-xl";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">${c.name.substring(0,2).toUpperCase()}</div>
+                            <div>
+                                <h4 class="font-bold text-sm text-white">${c.name}</h4>
+                                <p class="text-xs text-red-400">${diff} days since last chat</p>
+                            </div>
+                        </div>
+                        <button onclick="logContact(${c.id})" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-500/30">Log Chat</button>
+                    `;
+                    urgentContainer.appendChild(div);
                 });
-
-                onSave(newContacts);
-            };
-
-            return (
-                <div>
-                    <p className="text-sm text-slate-400 mb-4">
-                        Paste your CSV data below. Format: <br/>
-                        <code className="bg-slate-900 px-1 rounded text-brand-400">FirstName, LastName, Company, Email</code>
-                    </p>
-                    <textarea 
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:border-brand-500 focus:outline-none transition-colors text-white h-48 font-mono"
-                        placeholder="John, Doe, Google, john@google.com&#10;Jane, Smith, Amazon, jane@amazon.com"
-                        value={csvData}
-                        onChange={e => setCsvData(e.target.value)}
-                    ></textarea>
-                    <div className="flex gap-2 mt-6">
-                        <Button onClick={handleImport} className="flex-1">Import Contacts</Button>
-                        <Button onClick={onClose} variant="secondary">Cancel</Button>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- 4. VIEWS ---
-
-        const Dashboard = ({ contacts, tasks, navigate }) => {
-            const overdueTasks = tasks.filter(t => !t.isDone && new Date(t.dueAt) < new Date());
-            const upcomingTasks = tasks.filter(t => !t.isDone && new Date(t.dueAt) >= new Date());
-            
-            // Re-adding dormantContacts definition to fix ReferenceError
-            const dormantContacts = contacts.filter(c => c.relationshipStage === 'dormant');
-            
-            // Calculate contacts due for reconnection based on Cadence
-            const dueContacts = contacts.filter(c => {
-                if (!c.cadenceDays || !c.lastContactAt) return false;
-                const last = new Date(c.lastContactAt);
-                const next = new Date(last);
-                next.setDate(last.getDate() + c.cadenceDays);
-                return next <= new Date(); // Due date is in past or today
-            });
-
-            return (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="border-l-4 border-red-500">
-                            <h3 className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Attention Needed</h3>
-                            <div className="flex justify-between items-end">
-                                <span className="text-3xl font-bold text-white">{overdueTasks.length}</span>
-                                <i className="ph ph-warning text-red-400 text-2xl"></i>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Overdue tasks</p>
-                        </Card>
-                        <Card className="border-l-4 border-emerald-500">
-                            <h3 className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Active Network</h3>
-                            <div className="flex justify-between items-end">
-                                <span className="text-3xl font-bold text-white">{contacts.length}</span>
-                                <i className="ph ph-users text-emerald-400 text-2xl"></i>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Total contacts</p>
-                        </Card>
-                        <Card className="border-l-4 border-indigo-500">
-                            <h3 className="text-slate-400 text-xs uppercase font-bold tracking-wider mb-1">Upcoming</h3>
-                            <div className="flex justify-between items-end">
-                                <span className="text-3xl font-bold text-white">{upcomingTasks.length}</span>
-                                <i className="ph ph-calendar-check text-indigo-400 text-2xl"></i>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">Scheduled interactions</p>
-                        </Card>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><i className="ph ph-bell-ringing text-brand-500"></i> Task Inbox</h2>
-                            {overdueTasks.length === 0 && upcomingTasks.length === 0 ? (
-                                <div className="p-8 text-center text-slate-500 border border-dashed border-slate-700 rounded-xl">All caught up!</div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {[...overdueTasks, ...upcomingTasks].slice(0, 5).map(task => {
-                                        const contact = contacts.find(c => c.id === task.contactId);
-                                        const isOverdue = new Date(task.dueAt) < new Date();
-                                        const contactName = contact ? contact.firstName + ' ' + contact.lastName : 'Unknown';
-                                        
-                                        return (
-                                            <div key={task.id} className="bg-slate-800 p-4 rounded-lg flex justify-between items-center border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer" onClick={() => contact && navigate('contact', contact.id)}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-2 h-2 rounded-full ${isOverdue ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                                                    <div>
-                                                        <h4 className="font-semibold text-sm">{task.title}</h4>
-                                                        <p className="text-xs text-slate-400">with {contactName}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className={`text-xs font-bold ${isOverdue ? 'text-red-400' : 'text-slate-400'}`}>
-                                                        {isOverdue ? 'Overdue' : 'Upcoming'}
-                                                    </span>
-                                                    <p className="text-[10px] text-slate-500">{new Date(task.dueAt).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="space-y-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><i className="ph ph-moon text-indigo-400"></i> Dormant Contacts</h2>
-                            <div className="space-y-2">
-                                {dormantContacts.length === 0 ? <p className="text-sm text-slate-500 italic">No dormant contacts.</p> : dormantContacts.map(c => (
-                                    <div key={c.id} onClick={() => navigate('contact', c.id)} className="bg-slate-800 p-3 rounded-lg flex justify-between items-center border border-slate-700 hover:bg-slate-700 transition-colors cursor-pointer">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold">{c.firstName[0]}{c.lastName[0]}</div>
-                                            <div>
-                                                <p className="text-sm font-medium">{c.firstName} {c.lastName}</p>
-                                                <p className="text-[10px] text-slate-400">Last: {c.lastContactAt || 'Never'}</p>
-                                            </div>
-                                        </div>
-                                        <button className="text-xs text-brand-500 hover:text-brand-400">Reconnect</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const ContactsList = ({ contacts, navigate, onAdd, onImport }) => {
-            const [search, setSearch] = useState("");
-            const filtered = contacts.filter(c => 
-                (c.firstName + ' ' + c.lastName + c.company).toLowerCase().includes(search.toLowerCase())
-            );
-
-            return (
-                <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <div className="relative w-64">
-                            <i className="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                            <input 
-                                type="text" 
-                                placeholder="Search contacts..." 
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:border-brand-500 focus:outline-none text-white"
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button onClick={onImport} variant="secondary"><i className="ph ph-upload"></i> Import CSV</Button>
-                            <Button onClick={onAdd}><i className="ph ph-plus"></i> Add Contact</Button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filtered.map(c => (
-                            <div key={c.id} onClick={() => navigate('contact', c.id)} className="bg-slate-800 border border-slate-700 rounded-xl p-5 hover:border-brand-500 transition-colors cursor-pointer group">
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white">
-                                        {c.firstName[0]}{c.lastName[0]}
-                                    </div>
-                                    <Badge color={c.relationshipStage === 'active' ? 'green' : 'gray'}>{c.relationshipStage}</Badge>
-                                </div>
-                                <h3 className="font-bold text-lg">{c.firstName} {c.lastName}</h3>
-                                <p className="text-sm text-slate-400">{c.jobTitle} @ {c.company}</p>
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {c.tags.map(t => <span key={t} className="text-[10px] bg-slate-900 px-2 py-1 rounded text-slate-500">#{t}</span>)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        const DayDetail = ({ date, contacts, interactions, tasks, onUpdateTask, onDeleteTask, onQuickAdd }) => {
-            const dateStr = date; 
-            
-            const dayInteractions = interactions.filter(i => i.date === dateStr);
-            const dayTasks = tasks.filter(t => t.dueAt === dateStr);
-            
-            const d = new Date();
-            d.setDate(d.getDate() + 1);
-            const demoRestDate = d.toISOString().split('T')[0];
-            const hasRestEvent = demoRestDate === dateStr;
-
-            return (
-                <div className="space-y-6">
-                    <div className="space-y-3">
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Scheduled Items</h4>
-                        
-                        {dayInteractions.length === 0 && dayTasks.length === 0 && !hasRestEvent && (
-                            <p className="text-sm text-slate-500 italic">Nothing scheduled for this day.</p>
-                        )}
-
-                        {dayInteractions.map(i => {
-                            const c = contacts.find(c => c.id === i.contactId);
-                            return (
-                                <div key={i.id} className="bg-slate-700/30 p-3 rounded-lg flex items-center gap-3 border border-indigo-500/30">
-                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center">
-                                        <i className={`ph ${i.type === 'call' ? 'ph-phone' : i.type === 'coffee' ? 'ph-coffee' : 'ph-users'}`}></i>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-white capitalize">{i.type}</p>
-                                        <p className="text-xs text-slate-400">with {c ? c.firstName + ' ' + c.lastName : 'Unknown'}</p>
-                                    </div>
-                                </div>
-                            )
-                        })}
-
-                        {dayTasks.map(t => {
-                            const c = contacts.find(c => c.id === t.contactId);
-                            return (
-                                <div key={t.id} className="bg-slate-700/30 p-3 rounded-lg flex items-center gap-3 border border-green-500/30 group">
-                                    <input type="checkbox" checked={t.isDone} onChange={() => onUpdateTask(t.id, { isDone: !t.isDone })} className="cursor-pointer" />
-                                    <div className="flex-1">
-                                        <p className={`text-sm font-medium ${t.isDone ? 'line-through text-slate-500' : 'text-white'}`}>{t.title}</p>
-                                        <p className="text-xs text-slate-400">{c ? `for ${c.firstName} ${c.lastName}` : ''}</p>
-                                    </div>
-                                    <button onClick={() => onDeleteTask(t.id)} className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100"><i className="ph ph-trash"></i></button>
-                                </div>
-                            )
-                        })}
-
-                        {hasRestEvent && (
-                            <div className="bg-slate-700/30 p-3 rounded-lg flex items-center gap-3 border border-orange-500/30">
-                                <div className="w-8 h-8 rounded-full bg-orange-500/20 text-orange-300 flex items-center justify-center">
-                                    <i className="ph ph-bowl-food"></i>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-white">Dinner at Dishoom</p>
-                                    <p className="text-xs text-slate-400">Restaurant App Event</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex gap-2 pt-4 border-t border-slate-700">
-                        <Button onClick={() => onQuickAdd('interaction')} className="flex-1 text-xs"><i className="ph ph-plus"></i> Interaction</Button>
-                        <Button onClick={() => onQuickAdd('task')} className="flex-1 text-xs" variant="secondary"><i className="ph ph-check-square"></i> Task</Button>
-                    </div>
-                </div>
-            );
-        };
-
-        const CalendarView = ({ contacts, interactions, tasks, onDayClick }) => {
-            const [viewMode, setViewMode] = useState('month'); 
-            const [currentDate, setCurrentDate] = useState(new Date());
-
-            const events = useMemo(() => {
-                const evts = [];
-                interactions.forEach(i => {
-                    const contact = contacts.find(c => c.id === i.contactId);
-                    const contactName = contact ? contact.firstName : 'Unknown';
-                    evts.push({ id: i.id, title: `${i.type} with ${contactName}`, date: i.date, type: 'crm' });
-                });
-                tasks.forEach(t => {
-                    const contact = contacts.find(c => c.id === t.contactId);
-                    const contactName = contact ? contact.firstName : 'Unknown';
-                    evts.push({ id: t.id, title: `Task: ${t.title} (${contactName})`, date: t.dueAt, type: 'task' });
-                });
-                const d = new Date();
-                d.setDate(d.getDate() + 1);
-                evts.push({ id: 'ext1', title: 'Dinner at Dishoom', date: d.toISOString().split('T')[0], type: 'restaurant' });
-                return evts.sort((a,b) => new Date(b.date) - new Date(a.date));
-            }, [interactions, contacts, tasks]);
-
-            const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-            const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-
-            const currentMonthEvents = useMemo(() => {
-                return events.filter(e => {
-                    const d = new Date(e.date);
-                    return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
-                });
-            }, [events, currentDate]);
-
-            const renderMonthGrid = () => {
-                const year = currentDate.getFullYear();
-                const month = currentDate.getMonth();
-                const daysInMonth = getDaysInMonth(year, month);
-                const firstDay = getFirstDayOfMonth(year, month);
-                const days = [];
-                
-                for (let i = 0; i < firstDay; i++) days.push(<div key={`pad-${i}`} className="h-24 bg-slate-800/30 border border-slate-800"></div>);
-                
-                for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const dayEvents = currentMonthEvents.filter(e => e.date === dateStr);
-                    const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
-
-                    days.push(
-                        <div key={day} onClick={() => onDayClick(dateStr)} className={`h-24 p-2 border border-slate-700 bg-slate-800 relative group hover:bg-slate-700/50 transition-colors cursor-pointer ${isToday ? 'ring-1 ring-inset ring-brand-500' : ''}`}>
-                            <span className={`text-xs font-bold ${isToday ? 'text-brand-400' : 'text-slate-400'}`}>{day}</span>
-                            <div className="mt-1 space-y-1 overflow-y-auto max-h-[70px]">
-                                {dayEvents.map(evt => (
-                                    <div key={evt.id} className={`text-[10px] px-1 py-0.5 rounded truncate ${
-                                        evt.type === 'restaurant' ? 'bg-orange-500/20 text-orange-200' : 
-                                        evt.type === 'task' ? 'bg-green-500/20 text-green-200' :
-                                        'bg-indigo-500/20 text-indigo-200'
-                                    }`} title={evt.title}>
-                                        {evt.title}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                }
-                return days;
-            };
-
-            const changeMonth = (offset) => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1));
-
-            return (
-                <div className="space-y-6 h-full flex flex-col">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-2xl font-bold">{currentDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}</h2>
-                            <div className="flex gap-1 bg-slate-800 rounded-lg p-1">
-                                <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-slate-700 rounded"><i className="ph ph-caret-left"></i></button>
-                                <button onClick={() => changeMonth(1)} className="p-1 hover:bg-slate-700 rounded"><i className="ph ph-caret-right"></i></button>
-                            </div>
-                        </div>
-                        <div className="flex bg-slate-800 p-1 rounded-lg">
-                            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'}`}><i className="ph ph-list"></i> List</button>
-                            <button onClick={() => setViewMode('month')} className={`px-3 py-1.5 text-sm rounded-md transition-colors ${viewMode === 'month' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'}`}><i className="ph ph-grid-four"></i> Month</button>
-                        </div>
-                    </div>
-                    {viewMode === 'list' ? (
-                        <div className="space-y-4 overflow-y-auto">
-                            {currentMonthEvents.length === 0 ? <p className="text-slate-500 italic">No events this month.</p> : null}
-                            {currentMonthEvents.map(evt => (
-                                <div key={evt.id} className="flex gap-4">
-                                    <div className="flex flex-col items-center w-16 pt-1">
-                                        <span className="text-slate-400 text-xs font-mono">{new Date(evt.date).toLocaleDateString(undefined, {month:'short'})}</span>
-                                        <span className="text-xl font-bold">{new Date(evt.date).getDate()}</span>
-                                    </div>
-                                    <div className={`flex-1 p-4 rounded-lg border ${
-                                        evt.type === 'restaurant' ? 'bg-orange-900/10 border-orange-500/30' : 
-                                        evt.type === 'task' ? 'bg-green-900/10 border-green-500/30' :
-                                        'bg-indigo-900/10 border-indigo-500/30'
-                                    }`}>
-                                        <h4 className="font-bold">{evt.title}</h4>
-                                        <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">{evt.type} Event</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex-1 min-h-[500px]">
-                            <div className="grid grid-cols-7 mb-2 text-center text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                            </div>
-                            <div className="grid grid-cols-7 auto-rows-fr h-full">{renderMonthGrid()}</div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const ContactDetail = ({ contact, interactions, tasks, onBack, onEdit, onDelete, onLogInteraction, onUpdateTask, onAddTask, onDeleteTask }) => {
-            const contactInteractions = interactions.filter(i => i.contactId === contact.id).sort((a,b) => new Date(b.date) - new Date(a.date));
-            const contactTasks = tasks.filter(t => t.contactId === contact.id);
-
-            const [newTaskTitle, setNewTaskTitle] = useState("");
-            const [newTaskDate, setNewTaskDate] = useState("");
-
-            const handleAddTask = () => {
-                if(!newTaskTitle || !newTaskDate) return;
-                onAddTask({ title: newTaskTitle, dueAt: newTaskDate });
-                setNewTaskTitle(""); setNewTaskDate("");
-            };
-
-            return (
-                <div className="space-y-6 animate-slide-in">
-                    <button onClick={onBack} className="text-slate-400 hover:text-white flex items-center gap-2 text-sm"><i className="ph ph-arrow-left"></i> Back</button>
-                    
-                    <div className="glass p-8 rounded-2xl flex flex-col md:flex-row gap-6 items-start md:items-center">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-xl">
-                            {contact.firstName[0]}{contact.lastName[0]}
-                        </div>
-                        <div className="flex-1">
-                            <h1 className="text-3xl font-bold">{contact.firstName} {contact.lastName}</h1>
-                            <p className="text-lg text-slate-400">{contact.jobTitle} @ {contact.company}</p>
-                            <div className="flex flex-wrap gap-2 mt-3 items-center">
-                                {contact.tags.map(t => <Badge key={t} color="indigo">{t}</Badge>)}
-                                <Badge color="gray">Cadence: {contact.cadenceDays} days</Badge>
-                                <button onClick={onEdit} className="text-xs text-slate-400 hover:text-white ml-2 underline">Edit Profile</button>
-                            </div>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button onClick={() => onLogInteraction(contact.id)}><i className="ph ph-plus-circle text-lg"></i> Interaction</Button>
-                            <Button onClick={() => { if(confirm("Delete contact?")) onDelete(contact.id); }} variant="danger"><i className="ph ph-trash text-lg"></i></Button>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-6">
-                            <h3 className="text-xl font-bold">History</h3>
-                            {contactInteractions.length === 0 ? <p className="text-slate-500 italic">No interactions logged yet.</p> : (
-                                <div className="relative border-l-2 border-slate-700 ml-3 pl-8 space-y-8">
-                                    {contactInteractions.map(i => (
-                                        <div key={i.id} className="relative">
-                                            <div className="absolute -left-[41px] w-5 h-5 rounded-full bg-slate-900 border-2 border-brand-500"></div>
-                                            <div className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-bold capitalize text-brand-400">{i.type}</span>
-                                                    <span className="text-xs text-slate-500">{new Date(i.date).toLocaleDateString()}</span>
-                                                </div>
-                                                <p className="text-slate-300 text-sm">{i.notes}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="space-y-6">
-                            <Card>
-                                <h3 className="font-bold mb-4 flex items-center gap-2"><i className="ph ph-list-checks"></i> Tasks</h3>
-                                <div className="space-y-2 mb-4">
-                                    {contactTasks.map(t => (
-                                        <div key={t.id} className="flex gap-2 items-center text-sm p-2 bg-slate-700/50 rounded group">
-                                            <input type="checkbox" checked={t.isDone} onChange={() => onUpdateTask(t.id, { isDone: !t.isDone })} className="w-4 h-4 rounded border-slate-500 cursor-pointer" />
-                                            <div className="flex-1">
-                                                <span className={`${t.isDone ? 'line-through text-slate-500' : 'text-white'} block`}>{t.title}</span>
-                                                <span className="text-[10px] text-slate-500">{new Date(t.dueAt).toLocaleDateString()}</span>
-                                            </div>
-                                            <button onClick={() => onDeleteTask(t.id)} className="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><i className="ph ph-x"></i></button>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="border-t border-slate-700 pt-4 mt-2">
-                                    <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="New task..." className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs mb-2 text-white" />
-                                    <div className="flex gap-2">
-                                        <input type="date" value={newTaskDate} onChange={e => setNewTaskDate(e.target.value)} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs flex-1 text-white" />
-                                        <button onClick={handleAddTask} className="bg-brand-600 text-white px-2 py-1 rounded text-xs">Add</button>
-                                    </div>
-                                </div>
-                            </Card>
-                            <Card>
-                                <h3 className="font-bold mb-2">Details</h3>
-                                <div className="space-y-2 text-sm text-slate-400">
-                                    <p>Email: <span className="text-white block select-all">{contact.email || 'N/A'}</span></p>
-                                    <p>Phone: <span className="text-white block select-all">{contact.phone || 'N/A'}</span></p>
-                                    <p>Last Contact: <span className="text-white block">{contact.lastContactAt || 'Never'}</span></p>
-                                </div>
-                            </Card>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- MAIN APP SHELL ---
-        const App = () => {
-            const [view, setView] = useState('dashboard');
-            const [selectedContactId, setSelectedContactId] = useState(null);
-            
-            // Modal States
-            const [modal, setModal] = useState({ isOpen: false, type: null, data: null }); // type: 'addContact', 'editContact', 'logInteraction', 'dayDetail', 'import', 'quickAdd', 'notifications'
-
-            // Data
-            const [contacts, setContacts] = useState(db.get('contacts'));
-            const [interactions, setInteractions] = useState(db.get('interactions'));
-            const [tasks, setTasks] = useState(db.get('tasks'));
-
-            // Derived Data for Notifications
-            const dueContacts = useMemo(() => {
-                return contacts.filter(c => {
-                    if (!c.cadenceDays || !c.lastContactAt) return false;
-                    const last = new Date(c.lastContactAt);
-                    const next = new Date(last);
-                    next.setDate(last.getDate() + c.cadenceDays);
-                    return next <= new Date();
-                });
-            }, [contacts]);
-
-            // Navigation
-            const navigate = (newView, id = null) => {
-                setView(newView);
-                if (id) {
-                    if (newView === 'promptInteraction') {
-                        // Special case for dashboard prompt
-                        setModal({ isOpen: true, type: 'quickAdd', data: { mode: 'interaction', contactId: id } });
-                    } else {
-                        setSelectedContactId(id);
-                    }
-                }
-            };
-
-            // CRUD Handlers
-            const handleSaveContact = (data) => {
-                if (modal.type === 'addContact') {
-                    const newContact = { id: 'c' + Date.now(), lastContactAt: null, ...data };
-                    const updated = db.add('contacts', newContact);
-                    setContacts(updated);
-                } else if (modal.type === 'editContact') {
-                    const updated = db.update('contacts', modal.data.id, data);
-                    setContacts(updated);
-                }
-                setModal({ isOpen: false, type: null, data: null });
-            };
-
-            const handleImportContacts = (newContacts) => {
-                const updated = [...newContacts, ...contacts];
-                db.set('contacts', updated);
-                setContacts(updated);
-                setModal({ isOpen: false, type: null, data: null });
-            };
-
-            const handleQuickAdd = (data) => {
-                if (data.mode === 'task') {
-                    const newTask = { id: 't' + Date.now(), contactId: data.contactId, title: data.title, dueAt: data.dueAt, isDone: false };
-                    const updated = db.add('tasks', newTask);
-                    setTasks(updated);
-                } else {
-                    handleLogInteraction({ date: data.date, type: data.type, notes: data.notes }, { id: data.contactId }); 
-                }
-                setModal({ isOpen: false });
-            };
-
-            const handleDeleteContact = (id) => {
-                setContacts(db.remove('contacts', id));
-                setInteractions(interactions.filter(i => i.contactId !== id)); 
-                setTasks(tasks.filter(t => t.contactId !== id)); 
-                navigate('contacts');
-            };
-
-            const handleLogInteraction = (data, context = modal.data) => {
-                const cId = context ? context.id : data.contactId; 
-                
-                const newInteraction = { id: 'i' + Date.now(), contactId: cId, ...data };
-                const updatedInteractions = db.add('interactions', newInteraction);
-                setInteractions(updatedInteractions);
-
-                const updatedContacts = db.update('contacts', cId, { lastContactAt: data.date });
-                setContacts(updatedContacts);
-
-                setModal({ isOpen: false, type: null, data: null });
-            };
-
-            const handleUpdateTask = (id, payload) => setTasks(db.update('tasks', id, payload));
-            const handleDeleteTask = (id) => setTasks(db.remove('tasks', id));
-            const handleAddTask = (contactId, payload) => {
-                const newTask = { id: 't' + Date.now(), contactId, isDone: false, ...payload };
-                setTasks(db.add('tasks', newTask));
-            };
-
-            const handleDayClick = (dateStr) => {
-                setModal({ isOpen: true, type: 'dayDetail', data: { date: dateStr } });
-            };
-
-            // View Logic
-            let content;
-            if(view === 'dashboard') content = <Dashboard contacts={contacts} tasks={tasks} navigate={navigate} />;
-            else if(view === 'contacts') content = <ContactsList contacts={contacts} navigate={navigate} onAdd={() => setModal({ isOpen: true, type: 'addContact' })} onImport={() => setModal({ isOpen: true, type: 'import' })} />;
-            else if(view === 'calendar') content = <CalendarView contacts={contacts} interactions={interactions} tasks={tasks} onDayClick={handleDayClick} />;
-            else if(view === 'contact' && selectedContactId) {
-                const c = contacts.find(x => x.id === selectedContactId);
-                if (!c) navigate('contacts'); 
-                else content = <ContactDetail 
-                    contact={c} 
-                    interactions={interactions} 
-                    tasks={tasks} 
-                    onBack={() => navigate('contacts')} 
-                    onEdit={() => setModal({ isOpen: true, type: 'editContact', data: c })}
-                    onDelete={handleDeleteContact}
-                    onLogInteraction={(id) => setModal({ isOpen: true, type: 'logInteraction', data: { id } })}
-                    onUpdateTask={handleUpdateTask}
-                    onDeleteTask={handleDeleteTask}
-                    onAddTask={(p) => handleAddTask(c.id, p)}
-                />;
             }
+        }
 
-            return (
-                <div className="flex h-screen overflow-hidden">
-                    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
-                        <div className="p-6 flex items-center gap-3">
-                            <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center text-white font-bold"><i className="ph ph-users-three"></i></div>
-                            <span className="font-bold text-lg">Personal CRM</span>
-                        </div>
-                        <div className="px-4 mb-4">
-                            <button onClick={() => setModal({ isOpen: true, type: 'quickAdd' })} className="w-full bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 border border-slate-700 transition-colors">
-                                <i className="ph ph-plus-circle text-brand-400"></i> Quick Add
-                            </button>
-                        </div>
-                        <nav className="flex-1 px-4 space-y-2">
-                            <button onClick={() => navigate('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'dashboard' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
-                                <i className="ph ph-squares-four text-xl"></i> Dashboard
-                            </button>
-                            <button onClick={() => navigate('contacts')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'contacts' || view === 'contact' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
-                                <i className="ph ph-address-book text-xl"></i> Contacts
-                            </button>
-                            <button onClick={() => navigate('calendar')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${view === 'calendar' ? 'bg-brand-600 text-white' : 'text-slate-400 hover:bg-slate-800'}`}>
-                                <i className="ph ph-calendar text-xl"></i> Calendar
-                            </button>
-                        </nav>
-                        <div className="p-4 border-t border-slate-800 mt-auto">
-                            <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="text-xs text-slate-600 hover:text-red-400 flex items-center gap-2">
-                                <i className="ph ph-trash"></i> Reset Data
-                            </button>
-                        </div>
-                    </aside>
+        function renderContacts() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const container = document.getElementById('contacts-list');
+            container.innerHTML = '';
 
-                    <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                        {/* Header */}
-                        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-sm z-10 shrink-0">
-                            <h2 className="text-xl font-bold text-white capitalize">{view === 'dashboard' ? 'Dashboard' : view}</h2>
-                            <button onClick={() => setModal({isOpen: true, type: 'notifications'})} className="relative p-2 text-slate-400 hover:text-white transition-colors">
-                                <i className="ph ph-bell text-xl"></i>
-                                {dueContacts.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>}
-                            </button>
-                        </header>
+            const filtered = contacts.filter(c => c.name.toLowerCase().includes(query));
 
-                        {/* Content Scrollable Area */}
-                        <div className="flex-1 overflow-y-auto p-8">
-                             <div className="max-w-5xl mx-auto">
-                                {content}
-                            </div>
-                        </div>
-                    </main>
+            filtered.forEach(c => {
+                const daysAgo = moment().diff(moment(c.last), 'days');
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-2xl active:bg-slate-800 transition-colors cursor-pointer";
+                div.onclick = () => { /* Future: Open Detail View */ };
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-full bg-${c.color || 'indigo'}-500/20 text-${c.color || 'indigo'}-300 flex items-center justify-center font-bold text-lg border border-${c.color || 'indigo'}-500/20">
+                        ${c.name.substring(0,2).toUpperCase()}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-white text-base">${c.name}</h3>
+                        <p class="text-xs text-slate-400">${c.role} • Every ${c.freq} days</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-slate-300">${daysAgo}d ago</p>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
 
-                    {/* MODALS */}
-                    <Modal isOpen={modal.isOpen} onClose={() => setModal({ ...modal, isOpen: false })} title={
-                        modal.type === 'addContact' ? 'Add New Contact' : 
-                        modal.type === 'editContact' ? 'Edit Contact' : 
-                        modal.type === 'import' ? 'Import Contacts' :
-                        modal.type === 'quickAdd' ? 'Quick Add' : 
-                        modal.type === 'dayDetail' ? `Events for ${modal.data ? modal.data.date : ''}` : 
-                        modal.type === 'notifications' ? 'Notifications' : 'Log Interaction'
-                    }>
-                        {(modal.type === 'addContact' || modal.type === 'editContact') && (
-                            <ContactForm initialData={modal.data} onSave={handleSaveContact} onClose={() => setModal({ ...modal, isOpen: false })} />
-                        )}
-                        {modal.type === 'logInteraction' && (
-                            <InteractionForm contactId={modal.data.id} onSave={handleLogInteraction} onClose={() => setModal({ ...modal, isOpen: false })} />
-                        )}
-                        {modal.type === 'import' && (
-                            <ImportForm onSave={handleImportContacts} onClose={() => setModal({ ...modal, isOpen: false })} />
-                        )}
-                        {modal.type === 'quickAdd' && (
-                            <QuickAddForm 
-                                contacts={contacts} 
-                                onSave={handleQuickAdd} 
-                                onClose={() => setModal({ ...modal, isOpen: false })} 
-                                initialDate={modal.data ? modal.data.date : null}
-                                initialMode={modal.data ? modal.data.mode : null}
-                                initialContactId={modal.data ? modal.data.contactId : null}
-                            />
-                        )}
-                        {modal.type === 'dayDetail' && modal.data && (
-                            <DayDetail 
-                                date={modal.data.date} 
-                                contacts={contacts} 
-                                interactions={interactions} 
-                                tasks={tasks} 
-                                onUpdateTask={handleUpdateTask} 
-                                onDeleteTask={handleDeleteTask}
-                                onQuickAdd={(mode) => setModal({ isOpen: true, type: 'quickAdd', data: { date: modal.data.date, mode } })}
-                            />
-                        )}
-                        {modal.type === 'notifications' && (
-                            <NotificationList 
-                                dueContacts={dueContacts} 
-                                onPlanInteraction={(id) => setModal({ isOpen: true, type: 'quickAdd', data: { mode: 'interaction', contactId: id } })}
-                            />
-                        )}
-                    </Modal>
-                </div>
-            );
-        };
+        function renderCalendar() {
+            const container = document.getElementById('calendar-list');
+            container.innerHTML = '';
+            
+            // Sort by next due date
+            const sorted = [...contacts].sort((a, b) => {
+                const nextA = moment(a.last).add(a.freq, 'days');
+                const nextB = moment(b.last).add(b.freq, 'days');
+                return nextA - nextB;
+            });
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+            sorted.slice(0, 5).forEach(c => {
+                const nextDate = moment(c.last).add(c.freq, 'days');
+                const relative = nextDate.fromNow();
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 p-3 border-l-2 border-indigo-500 bg-slate-800/30 pl-4 rounded-r-xl";
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm text-white">Contact ${c.name}</h4>
+                        <p class="text-xs text-slate-500">${relative}</p>
+                    </div>
+                    <div class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">${nextDate.format('MMM D')}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- ACTIONS ---
+
+        function openModal() { document.getElementById('crm-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('crm-modal').classList.add('hidden'); }
+
+        function saveContact() {
+            const name = document.getElementById('inp-name').value;
+            const role = document.getElementById('inp-role').value;
+            const freq = parseInt(document.getElementById('inp-freq').value);
+            const last = document.getElementById('inp-last').value;
+
+            if (!name || !last) return alert("Please fill required fields");
+
+            const newContact = {
+                id: Date.now(),
+                name, role, freq, last,
+                color: ['blue', 'indigo', 'purple', 'pink', 'emerald'][Math.floor(Math.random() * 5)]
+            };
+
+            contacts.push(newContact);
+            localStorage.setItem('crm_contacts', JSON.stringify(contacts));
+            
+            // Clean up
+            document.getElementById('inp-name').value = '';
+            closeModal();
+            init();
+        }
+
+        function logContact(id) {
+            const idx = contacts.findIndex(c => c.id === id);
+            if (idx !== -1) {
+                if(confirm(`Mark ${contacts[idx].name} as contacted today?`)) {
+                    contacts[idx].last = new Date().toISOString().split('T')[0];
+                    localStorage.setItem('crm_contacts', JSON.stringify(contacts));
+                    init();
+                }
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>
