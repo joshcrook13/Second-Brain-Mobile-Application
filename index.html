@@ -12,7 +12,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v21 Active'));
+          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v22 Active'));
         });
       }
     </script>
@@ -105,16 +105,32 @@
     <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-6"><div class="bg-slate-900/80 backdrop-blur-xl w-full max-w-sm rounded-[2rem] border border-slate-800/50 p-8 shadow-2xl"><h3 class="font-bold text-2xl text-white mb-6">Add App</h3><div class="space-y-4"><input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><div class="flex gap-3"><input type="text" id="mod-icon" placeholder="Icon (e.g. ph-cube)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><input type="text" id="mod-color" placeholder="Color (e.g. blue)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"></div><input type="text" id="mod-url" placeholder="Path (e.g. apps/myapp.html)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"></div><div class="flex gap-4 mt-8"><button onclick="document.getElementById('module-modal').classList.add('hidden')" class="flex-1 py-4 bg-slate-800/50 text-slate-300 rounded-2xl font-bold border border-slate-700/50">Cancel</button><button onclick="saveModule()" class="flex-1 py-4 bg-gradient-to-r from-brain-accent to-blue-500 text-slate-900 rounded-2xl font-bold shadow-lg shadow-blue-500/20">Add App</button></div></div></div>
 
     <script>
+        // The Master List of Default Apps
         const defaultApps = [
             {id:'finance',title:"Vault Finance",desc:"Budget & Cashflow",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
             {id:'crm',title:"Personal CRM",desc:"Network Relationships",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
             {id:'food',title:"Gourmet Tracker",desc:"Wishlist & Reviews",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
             {id:'todo',title:"Task Master",desc:"Projects & Goals",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
         ];
+        
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
         function init() {
             loadUserData();
+            
+            // --- AUTO-REPAIR: Ensure all default apps (like CRM) are present ---
+            let needsSave = false;
+            defaultApps.forEach(defApp => {
+                if (!myApps.find(a => a.id === defApp.id)) {
+                    myApps.push(defApp); // Add missing app
+                    needsSave = true;
+                }
+            });
+            if (needsSave) {
+                localStorage.setItem('brain_apps', JSON.stringify(myApps));
+            }
+            // -------------------------------------------------------------------
+
             renderApps();
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase();
         }
