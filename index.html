@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#F8F9FE"> <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default"> <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#F8F9FE">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://fav.farm/🧠">
 
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v27 Active'));
+          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v28 Active'));
         });
       }
     </script>
@@ -28,10 +30,10 @@
                     fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
                     colors: { 
                         brain: { 
-                            bg: '#F8F9FE',      /* The light gray-blue background */
-                            text: '#1E293B',    /* Dark slate text */
-                            muted: '#64748B',   /* Muted gray text */
-                            accent: '#5F33E1'   /* The specific Figma Purple */
+                            bg: '#F8F9FE',
+                            text: '#1E293B',
+                            muted: '#64748B',
+                            accent: '#5F33E1'
                         } 
                     }
                 }
@@ -43,35 +45,44 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* Modern Clean Tile Style */
+        /* Flexible Tile that fills available space */
         .app-tile {
             background: white;
             border-radius: 24px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.04); /* Soft, diffused shadow */
+            box-shadow: 0 4px 24px rgba(0,0,0,0.03);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.5);
-            aspect-ratio: 1/1; /* Ensures perfect squares */
+            border: 1px solid rgba(255,255,255,0.6);
+            height: 100%; /* Fill the grid cell */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .app-tile:active { transform: scale(0.97); box-shadow: 0 2px 12px rgba(0,0,0,0.03); }
+        .app-tile:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
 
-        /* The Purple Add Button */
-        .add-btn {
-            background: #5F33E1;
-            color: white;
-            box-shadow: 0 8px 20px rgba(95, 51, 225, 0.25);
-            border-radius: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
+        /* Dashed Add Button */
+        .add-tile {
+            background: rgba(255,255,255,0.5);
+            border: 2px dashed #CBD5E1;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            color: #64748B;
+            transition: all 0.2s;
+            height: 100%;
         }
-        .add-btn:active { transform: scale(0.96); box-shadow: 0 4px 12px rgba(95, 51, 225, 0.2); }
+        .add-tile:active { background: rgba(255,255,255,0.8); border-color: #5F33E1; color: #5F33E1; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-brain-bg font-sans">
+<body class="h-screen flex flex-col overflow-hidden bg-brain-bg font-sans pb-safe">
 
     <main class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
         
-        <header class="h-auto flex items-start justify-between px-8 z-10 shrink-0 pt-12 pb-4">
+        <header class="h-24 flex items-center justify-between px-8 shrink-0 pt-6">
             <div>
-                <p class="text-xs font-bold text-brain-muted uppercase tracking-wider mb-2" id="date-display">LOADING...</p>
+                <p class="text-xs font-bold text-brain-muted uppercase tracking-wider mb-1" id="date-display">LOADING...</p>
                 <h1 class="text-3xl font-extrabold text-brain-text tracking-tight leading-tight"><span id="greeting-text">Hello</span>,<br>Josh.</h1>
             </div>
             <button onclick="openSettings()" class="w-14 h-14 rounded-full bg-white border-2 border-white overflow-hidden shadow-sm relative z-20 mt-2">
@@ -79,16 +90,9 @@
             </button>
         </header>
 
-        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden px-8 pb-12 hide-scroll flex flex-col">
-            
-            <div id="dashboard-apps" class="grid grid-cols-2 gap-5 mb-8">
+        <div id="view-dashboard" class="flex-1 flex flex-col px-6 pb-6 overflow-hidden">
+            <div id="dashboard-apps" class="grid grid-cols-2 gap-4 flex-1 auto-rows-fr">
                 </div>
-
-            <div class="mt-auto">
-                <button onclick="openModuleModal()" class="w-full py-5 add-btn text-base font-bold flex items-center justify-center gap-2">
-                    <i class="ph ph-plus-bold text-xl"></i> Add New Module
-                </button>
-            </div>
         </div>
 
         <div id="view-app-viewer" class="hidden absolute inset-0 bg-brain-bg z-50 flex flex-col h-full w-full">
@@ -103,19 +107,18 @@
     </main>
 
     <div id="settings-modal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl relative overflow-hidden">
+        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl relative">
             <h3 class="text-2xl font-bold text-brain-text mb-6">Settings</h3>
             <div class="space-y-5">
-                <div><label class="text-xs text-slate-400 font-bold ml-2">Display Name</label><input id="settings-name" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-brain-text mt-1 focus:outline-none focus:ring-2 focus:ring-brain-accent/20"></div>
-                <div><label class="text-xs text-slate-400 font-bold ml-2">API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-brain-text mt-1 focus:outline-none focus:ring-2 focus:ring-brain-accent/20"></div>
-                
+                <div><label class="text-xs text-slate-400 font-bold ml-2">Name</label><input id="settings-name" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-brain-text mt-1 focus:outline-none"></div>
+                <div><label class="text-xs text-slate-400 font-bold ml-2">API Key</label><input type="password" id="settings-api-key" class="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-brain-text mt-1 focus:outline-none"></div>
                 <div class="grid grid-cols-2 gap-3 pt-2">
-                    <button onclick="resetApps()" class="text-xs text-red-500 bg-red-50 p-4 rounded-2xl font-bold hover:bg-red-100 transition-colors">Reset Apps</button>
-                    <button onclick="exportData()" class="text-xs text-brain-accent bg-indigo-50 p-4 rounded-2xl font-bold hover:bg-indigo-100 transition-colors">Export Data</button>
+                    <button onclick="resetApps()" class="text-xs text-red-500 bg-red-50 p-4 rounded-2xl font-bold">Reset</button>
+                    <button onclick="exportData()" class="text-xs text-brain-accent bg-indigo-50 p-4 rounded-2xl font-bold">Backup</button>
                 </div>
-                <button onclick="logout()" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-bold shadow-lg shadow-slate-900/20">Sign Out</button>
+                <button onclick="logout()" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-bold">Sign Out</button>
             </div>
-            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="w-full mt-8 text-slate-400 font-bold text-sm">Close</button>
+            <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="w-full mt-6 text-slate-400 font-bold text-sm">Close</button>
         </div>
     </div>
 
@@ -123,18 +126,18 @@
 
     <script>
         const defaultApps = [
-            {id:'finance',title:"Vault Finance",desc:"Budget & Cashflow",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
-            {id:'crm',title:"Personal CRM",desc:"Network Relationships",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
-            {id:'food',title:"Gourmet Tracker",desc:"Food Wishlist",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
-            {id:'todo',title:"Task Master",desc:"Daily Goals",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
-            {id:'journal',title:"Mind Log",desc:"Reflections",icon:"ph-book-bookmark",color:"purple",url:"apps/journalapp.html"}
+            {id:'finance',title:"Vault Finance",desc:"Budget",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
+            {id:'crm',title:"Personal CRM",desc:"Network",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
+            {id:'food',title:"Gourmet Tracker",desc:"Food",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
+            {id:'todo',title:"Task Master",desc:"Tasks",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
+            {id:'journal',title:"Mind Log",desc:"Journal",icon:"ph-book-bookmark",color:"purple",url:"apps/journalapp.html"}
         ];
         
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
         function init() {
             loadUserData();
-            // Auto-Repair Missing Apps
+            // Auto-Repair
             let needsSave = false;
             defaultApps.forEach(defApp => {
                 if (!myApps.find(a => a.id === defApp.id)) { myApps.push(defApp); needsSave = true; }
@@ -149,28 +152,44 @@
             const c = document.getElementById('dashboard-apps'); 
             c.innerHTML = ''; 
             
-            // Color palette for icon backgrounds
+            // Icon Colors
             const colorMap = { 
-                emerald: 'bg-emerald-100 text-emerald-600', green: 'bg-green-100 text-green-600', 
-                indigo: 'bg-indigo-100 text-indigo-600', purple: 'bg-purple-100 text-purple-600', 
-                orange: 'bg-orange-100 text-orange-600', blue: 'bg-blue-100 text-blue-600'
+                emerald: 'bg-emerald-100 text-emerald-600', 
+                green: 'bg-green-100 text-green-600', 
+                indigo: 'bg-indigo-100 text-indigo-600', 
+                purple: 'bg-purple-100 text-purple-600', 
+                orange: 'bg-orange-100 text-orange-600', 
+                blue: 'bg-blue-100 text-blue-600'
             };
 
+            // Render Apps
             myApps.forEach((a,i) => {
                 const theme = colorMap[a.color] || colorMap['blue'];
-
                 c.innerHTML += `
-                    <div onclick="openApp(${i})" class="app-tile p-6 flex flex-col justify-between cursor-pointer group">
-                        <div class="w-14 h-14 rounded-2xl ${theme} flex items-center justify-center text-2xl mb-4">
-                            <i class="ph ${a.icon} weight-bold"></i>
+                    <div onclick="openApp(${i})" class="app-tile p-6 cursor-pointer group">
+                        <div class="flex justify-between items-start mb-auto">
+                            <div class="w-12 h-12 rounded-2xl ${theme} flex items-center justify-center text-xl">
+                                <i class="ph ${a.icon} weight-bold"></i>
+                            </div>
+                            <i class="ph ph-arrow-right text-slate-300 group-hover:text-brain-accent transition-colors"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-brain-text text-xl leading-tight mb-1">${a.title}</h3>
-                            <p class="text-sm text-brain-muted font-medium truncate">${a.desc || 'App'}</p>
+                            <h3 class="font-bold text-brain-text text-lg leading-tight mb-1">${a.title}</h3>
+                            <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">${a.desc || 'App'}</p>
                         </div>
                     </div>
                 `;
             }); 
+            
+            // Render "Add Button" as the last tile in the grid
+            c.innerHTML += `
+                <div onclick="openModuleModal()" class="add-tile cursor-pointer">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+                        <i class="ph ph-plus-bold text-xl"></i>
+                    </div>
+                    <span class="text-xs font-bold uppercase tracking-wider">Add Module</span>
+                </div>
+            `;
         }
 
         function openApp(i) { 
@@ -191,11 +210,9 @@
         function loadUserData(){
             const u = JSON.parse(localStorage.getItem('brain_user')) || {name:'Josh'};
             const hour = new Date().getHours();
-            let greeting;
-            if (hour < 12) greeting = 'Good Morning';
-            else if (hour < 18) greeting = 'Good Afternoon';
-            else greeting = 'Good Evening';
+            let greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
             document.getElementById('greeting-text').innerText = greeting;
+            if(u.avatar) document.getElementById('header-avatar').src = u.avatar;
         }
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'User'};document.getElementById('settings-name').value=u.name;document.getElementById('settings-api-key').value=localStorage.getItem('brain_gemini_key')||'';}
         function saveSettings(){const name=document.getElementById('settings-name').value;localStorage.setItem('brain_user',JSON.stringify({name}));localStorage.setItem('brain_gemini_key',document.getElementById('settings-api-key').value);loadUserData();document.getElementById('settings-modal').classList.add('hidden');}
