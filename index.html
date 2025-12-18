@@ -12,7 +12,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v18 Active'));
+          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v21 Active'));
         });
       }
     </script>
@@ -21,7 +21,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <script>
         if (!localStorage.getItem('brain_session')) window.location.href = 'login.html';
@@ -37,141 +36,80 @@
     <style>
         body { background-color: #020617; color: white; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .nav-item { transition: color 0.2s; color: #64748b; }
-        .nav-item.active { color: #38bdf8; }
-        .fab-container { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); background: #020617; padding: 6px; border-radius: 50%; border-top: 1px solid #1e293b; box-shadow: 0 -10px 20px rgba(0,0,0,0.2); }
-        .fab-btn { width: 56px; height: 56px; background: linear-gradient(135deg, #38bdf8, #2563eb); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4); }
-        .fab-btn:active { transform: scale(0.95); }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* App Card Style */
+        /* Futuristic App Card Style */
         .app-card {
-            background: #0f172a; /* Slate 900 */
-            border: 1px solid #1e293b; /* Slate 800 */
-            transition: all 0.2s;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .app-card:active { transform: scale(0.98); background: #1e293b; }
+        .app-card:active { transform: scale(0.98); background: rgba(15, 23, 42, 0.8); }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-brain-bg">
+<body class="h-screen flex flex-col overflow-hidden bg-brain-bg font-sans">
 
-    <aside class="w-72 bg-brain-card border-r border-brain-border hidden lg:flex flex-col fixed h-full z-50">
-        <div class="h-20 flex items-center px-6"><i class="ph ph-brain text-brain-accent text-3xl mr-3"></i><span class="font-bold text-xl">JoshOS</span></div>
-        <nav class="p-4 space-y-2">
-            <button onclick="switchTab('dashboard')" class="w-full flex items-center h-12 px-4 bg-slate-800 rounded-xl text-sm font-bold text-white"><i class="ph ph-squares-four text-lg mr-3"></i> Dashboard</button>
-        </nav>
-    </aside>
-
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative lg:ml-72 w-full">
+    <main class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
         
-        <header class="h-16 flex items-center justify-between px-5 z-10 shrink-0 bg-brain-bg/95 backdrop-blur-md border-b border-brain-border/50 sticky top-0">
+        <header class="h-20 flex items-center justify-between px-6 z-10 shrink-0 bg-transparent pt-4">
             <div>
-                <p class="text-[10px] font-bold text-brain-accent uppercase tracking-widest mb-0.5" id="date-display">LOADING...</p>
-                <h1 class="text-xl font-bold text-white"><span id="greeting-text">Hello</span>, Josh.</h1>
+                <p class="text-[11px] font-bold text-brain-accent uppercase tracking-widest mb-1 opacity-80" id="date-display">LOADING...</p>
+                <h1 class="text-2xl font-bold text-white"><span id="greeting-text">Hello</span>, Josh.</h1>
             </div>
-            <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+            <button onclick="openSettings()" class="w-11 h-11 rounded-full bg-slate-800/50 border border-slate-700/50 overflow-hidden backdrop-blur-md relative z-20">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Josh" class="w-full h-full" id="header-avatar">
             </button>
         </header>
 
-        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-5 pb-32">
-            
-            <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">All Modules</h2>
-            
-            <div id="dashboard-apps" class="space-y-3">
+        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 pb-12 hide-scroll">
+            <div id="dashboard-apps" class="space-y-5">
                 </div>
 
-            <button onclick="openModuleModal()" class="w-full py-4 mt-6 border border-dashed border-slate-700 rounded-2xl text-slate-500 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:border-brain-accent hover:text-brain-accent transition-colors">
-                <i class="ph ph-plus"></i> Add New App
+            <button onclick="openModuleModal()" class="w-full py-5 mt-4 border-2 border-dashed border-slate-800/50 rounded-3xl text-slate-500 text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-3 hover:border-brain-accent/50 hover:text-brain-accent transition-all backdrop-blur-sm">
+                <i class="ph ph-plus-bold text-lg"></i> Add Module
             </button>
-
         </div>
 
         <div id="view-app-viewer" class="hidden absolute inset-0 bg-brain-bg z-50 flex flex-col h-full w-full">
-            <div class="h-14 bg-brain-card border-b border-brain-border flex items-center justify-between px-2 shrink-0">
-                <button onclick="goBack()" class="p-3 text-slate-400 hover:text-white flex items-center gap-1"><i class="ph ph-caret-left text-lg"></i> Back</button>
-                <span id="current-app-title" class="font-bold text-white text-sm">App</span>
-                <div class="w-12"></div>
+            <div class="h-14 bg-brain-card/80 backdrop-blur-xl border-b border-brain-border/50 flex items-center justify-between px-4 shrink-0">
+                <button onclick="goBack()" class="p-2 text-slate-400 hover:text-white flex items-center gap-2 py-3"><i class="ph ph-caret-left text-xl"></i> <span class="font-medium">Back</span></button>
+                <span id="current-app-title" class="font-bold text-white text-sm tracking-wider uppercase">App</span>
+                <div class="w-16"></div>
             </div>
-            <iframe id="app-frame" class="flex-1 w-full bg-black border-0"></iframe>
+            <iframe id="app-frame" class="flex-1 w-full bg-[#020617] border-0"></iframe>
         </div>
 
     </main>
 
-    <nav class="fixed bottom-0 left-0 w-full h-[88px] bg-brain-card/95 backdrop-blur-xl border-t border-brain-border flex justify-between items-start px-6 pt-4 z-40 lg:hidden pb-safe">
-        
-        <button onclick="switchTab('dashboard')" class="nav-item active flex flex-col items-center gap-1 w-12" id="nav-dashboard">
-            <i class="ph ph-house text-2xl"></i>
-            <span class="text-[10px] font-bold">Home</span>
-        </button>
-
-        <button onclick="switchTab('dashboard')" class="nav-item flex flex-col items-center gap-1 w-12" id="nav-apps">
-            <i class="ph ph-grid-four text-2xl"></i>
-            <span class="text-[10px] font-medium">Apps</span>
-        </button>
-
-        <div class="relative w-12 flex justify-center">
-            <div class="fab-container">
-                <button onclick="openQuickCapture()" class="fab-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#ffffff" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
-                </button>
-            </div>
-        </div>
-
-        <button onclick="openAiModal('Thinking...')" class="nav-item flex flex-col items-center gap-1 w-12">
-            <i class="ph ph-sparkle text-2xl"></i>
-            <span class="text-[10px] font-medium">AI</span>
-        </button>
-
-        <button onclick="openSettings()" class="nav-item flex flex-col items-center gap-1 w-12">
-            <i class="ph ph-user text-2xl"></i>
-            <span class="text-[10px] font-medium">Profile</span>
-        </button>
-    </nav>
-
-    <div id="quick-add-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-end justify-center">
-        <div class="bg-slate-900 w-full rounded-t-3xl border-t border-slate-800 p-6 pb-12 animate-slide-up">
-            <div id="qa-menu">
-                <h3 class="text-center text-slate-400 text-xs font-bold uppercase tracking-widest mb-6">Quick Capture</h3>
-                <div class="grid grid-cols-4 gap-3">
-                    <button onclick="showQaForm('task')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform"><div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white"><i class="ph ph-check text-xl"></i></div><span class="text-[10px] font-bold text-white">Task</span></button>
-                    <button onclick="showQaForm('journal')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform"><div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="ph ph-pencil-simple text-xl"></i></div><span class="text-[10px] font-bold text-white">Journal</span></button>
-                    <button onclick="showQaForm('expense')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform"><div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white"><i class="ph ph-currency-dollar text-xl"></i></div><span class="text-[10px] font-bold text-white">Expense</span></button>
-                    <button onclick="showQaForm('food')" class="flex flex-col items-center gap-2 p-3 bg-slate-800 rounded-2xl active:scale-95 transition-transform"><div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white"><i class="ph ph-bowl-food text-xl"></i></div><span class="text-[10px] font-bold text-white">Food</span></button>
+    <div id="settings-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-6">
+        <div class="bg-slate-900/80 backdrop-blur-xl w-full max-w-lg rounded-[2rem] border border-slate-800/50 p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+            <h3 class="text-2xl font-bold text-white mb-6">Settings</h3>
+            <div class="space-y-5">
+                <div><label class="text-xs text-slate-500 uppercase font-bold ml-2">Display Name</label><input id="settings-name" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white mt-1 focus:outline-none focus:border-brain-accent/50 transition-colors"></div>
+                <div><label class="text-xs text-slate-500 uppercase font-bold ml-2">Gemini API Key</label><input type="password" id="settings-api-key" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white mt-1 focus:outline-none focus:border-brain-accent/50 transition-colors"></div>
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button onclick="resetApps()" class="text-xs text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-2xl font-bold hover:bg-red-500/20 transition-colors">Reset App List</button>
+                    <button onclick="exportData()" class="text-xs text-brain-accent bg-brain-accent/10 border border-brain-accent/20 p-4 rounded-2xl font-bold hover:bg-brain-accent/20 transition-colors">Export Data</button>
                 </div>
+                <button onclick="logout()" class="w-full py-4 bg-slate-800/50 text-slate-300 border border-slate-700/50 rounded-2xl text-sm font-bold hover:bg-slate-800 transition-colors">Sign Out</button>
             </div>
-            <div id="qa-task" class="hidden"><h3 class="text-white font-bold mb-4">New Task</h3><input id="t-title" placeholder="Task Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><div class="flex gap-2 mb-3"><input type="date" id="t-date" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><select id="t-prio" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><option value="medium">Medium</option><option value="high">High</option></select></div><button onclick="saveQuickTask()" class="w-full py-3 bg-green-600 rounded-xl font-bold text-white">Save Task</button></div>
-            <div id="qa-journal" class="hidden"><h3 class="text-white font-bold mb-4">Journal</h3><input id="j-title" placeholder="Title" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><textarea id="j-body" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white h-24"></textarea><button onclick="saveQuickJournal()" class="w-full py-3 bg-purple-600 rounded-xl font-bold text-white">Save Entry</button></div>
-            <div id="qa-expense" class="hidden"><h3 class="text-white font-bold mb-4">Expense</h3><input id="e-amount" type="number" placeholder="Amount" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><input id="e-desc" placeholder="For..." class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><button onclick="saveQuickExpense()" class="w-full py-3 bg-emerald-600 rounded-xl font-bold text-white">Log Expense</button></div>
-            <div id="qa-food" class="hidden"><h3 class="text-white font-bold mb-4">Restaurant</h3><input id="f-name" placeholder="Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 mb-3 text-white"><button onclick="saveQuickFood()" class="w-full py-3 bg-orange-600 rounded-xl font-bold text-white">Save</button></div>
-            <button onclick="closeQuickCapture()" class="w-full mt-6 py-4 text-slate-500 font-bold border-t border-slate-800">Close</button>
+            <div class="flex gap-4 mt-8">
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="flex-1 py-4 bg-slate-800/50 text-white rounded-2xl font-bold border border-slate-700/50">Cancel</button>
+                <button onclick="saveSettings()" class="flex-1 py-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white rounded-2xl font-bold shadow-lg shadow-blue-500/30">Save Changes</button>
+            </div>
         </div>
     </div>
 
-    <div id="ai-modal" class="fixed inset-0 bg-black/80 hidden z-[100] flex items-center justify-center p-4"><div class="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-800 p-6"><h3 class="text-white font-bold mb-4">Gemini AI</h3><div id="ai-modal-body" class="text-slate-300 text-sm h-64 overflow-y-auto mb-4"></div><button onclick="document.getElementById('ai-modal').classList.add('hidden')" class="w-full py-3 bg-slate-800 text-white rounded-xl">Close</button></div></div>
-    
-    <div id="settings-modal" class="fixed inset-0 bg-black/80 hidden z-[100] flex items-center justify-center p-4">
-        <div class="bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-800 p-6">
-            <h3 class="text-white font-bold mb-4">Settings</h3>
-            <div class="space-y-4">
-                <input id="settings-name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
-                <input type="password" id="settings-api-key" placeholder="API Key" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white">
-                <button onclick="resetApps()" class="text-xs text-red-400 border border-red-500/30 p-2 rounded w-full">Reset App List</button>
-                <button onclick="exportData()" class="text-xs text-slate-400 border border-slate-700 p-2 rounded w-full">Export Data</button>
-            </div>
-            <div class="flex gap-3 mt-4"><button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl">Cancel</button><button onclick="saveSettings()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Save</button></div>
-        </div>
-    </div>
-    
-    <div id="module-modal" class="fixed inset-0 bg-black/90 hidden z-[100] flex items-center justify-center p-6"><div class="bg-slate-900 w-full max-w-sm rounded-3xl border border-slate-800 p-6 shadow-2xl"><h3 class="font-bold text-xl text-white mb-4">Add App</h3><div class="space-y-3"><input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><div class="flex gap-2"><input type="text" id="mod-icon" placeholder="Icon" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"><input type="text" id="mod-color" placeholder="Color" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><input type="text" id="mod-url" placeholder="Path" class="w-full bg-black border border-slate-800 rounded-xl px-4 py-3 text-white"></div><div class="flex gap-3 mt-6"><button onclick="document.getElementById('module-modal').classList.add('hidden')" class="flex-1 py-3 bg-slate-800 text-slate-300 rounded-xl font-bold">Cancel</button><button onclick="saveModule()" class="flex-1 py-3 bg-brain-accent text-slate-900 rounded-xl font-bold">Add</button></div></div></div>
+    <div id="module-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-[100] flex items-center justify-center p-6"><div class="bg-slate-900/80 backdrop-blur-xl w-full max-w-sm rounded-[2rem] border border-slate-800/50 p-8 shadow-2xl"><h3 class="font-bold text-2xl text-white mb-6">Add App</h3><div class="space-y-4"><input type="text" id="mod-title" placeholder="App Name" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><input type="text" id="mod-desc" placeholder="Description" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><div class="flex gap-3"><input type="text" id="mod-icon" placeholder="Icon (e.g. ph-cube)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"><input type="text" id="mod-color" placeholder="Color (e.g. blue)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"></div><input type="text" id="mod-url" placeholder="Path (e.g. apps/myapp.html)" class="w-full bg-black/50 border border-slate-700/50 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-brain-accent/50"></div><div class="flex gap-4 mt-8"><button onclick="document.getElementById('module-modal').classList.add('hidden')" class="flex-1 py-4 bg-slate-800/50 text-slate-300 rounded-2xl font-bold border border-slate-700/50">Cancel</button><button onclick="saveModule()" class="flex-1 py-4 bg-gradient-to-r from-brain-accent to-blue-500 text-slate-900 rounded-2xl font-bold shadow-lg shadow-blue-500/20">Add App</button></div></div></div>
 
     <script>
         const defaultApps = [
-            {id:'finance',title:"Vault Finance",desc:"Budget",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
-            {id:'crm',title:"Personal CRM",desc:"Network",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
-            {id:'food',title:"Gourmet Tracker",desc:"Food",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
-            {id:'todo',title:"Task Master",desc:"To-Do",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
-            {id:'journal',title:"Mind Log",desc:"Journal",icon:"ph-book-bookmark",color:"purple",url:"apps/journalapp.html"}
+            {id:'finance',title:"Vault Finance",desc:"Budget & Cashflow",icon:"ph-wallet",color:"emerald",url:"apps/finance.html"},
+            {id:'crm',title:"Personal CRM",desc:"Network Relationships",icon:"ph-users-three",color:"indigo",url:"apps/Personalcrm.html"},
+            {id:'food',title:"Gourmet Tracker",desc:"Wishlist & Reviews",icon:"ph-bowl-food",color:"orange",url:"apps/restaurantindex.html"},
+            {id:'todo',title:"Task Master",desc:"Projects & Goals",icon:"ph-check-square",color:"green",url:"apps/todo.html"},
         ];
         let myApps = JSON.parse(localStorage.getItem('brain_apps')) || defaultApps;
 
@@ -179,45 +117,36 @@
             loadUserData();
             renderApps();
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase();
-            document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
         }
 
-        // --- DASHBOARD RENDERER (App List Only) ---
         function renderApps() { 
             const c = document.getElementById('dashboard-apps'); 
             c.innerHTML = ''; 
-            if(!myApps || myApps.length === 0) { c.innerHTML = '<p class="text-white">No apps found.</p>'; return; }
+            if(!myApps || myApps.length === 0) { c.innerHTML = '<p class="text-slate-500 text-center py-10">No apps installed.</p>'; return; }
             
+            const colorMap = { emerald: '16, 185, 129', green: '34, 197, 94', indigo: '99, 102, 241', purple: '168, 85, 247', orange: '249, 115, 22', blue: '59, 130, 246', pink: '236, 72, 153' };
+
             myApps.forEach((a,i) => {
+                const rgb = colorMap[a.color] || colorMap['blue'];
+                const cardStyle = `border-color: rgba(${rgb}, 0.3); box-shadow: 0 8px 24px -6px rgba(${rgb}, 0.2);`;
+                const iconStyle = `color: rgb(${rgb}); border-color: rgba(${rgb}, 0.4); background-color: rgba(${rgb}, 0.1); box-shadow: inset 0 0 12px rgba(${rgb}, 0.1);`;
+
                 c.innerHTML += `
-                    <div onclick="openApp(${i})" class="app-card p-4 rounded-3xl flex items-center gap-4 cursor-pointer select-none">
-                        <div class="w-14 h-14 bg-${a.color}-500/10 rounded-2xl flex items-center justify-center text-${a.color}-400 shrink-0 border border-${a.color}-500/20">
-                            <i class="ph ${a.icon} text-3xl"></i>
+                    <div onclick="openApp(${i})" class="app-card p-5 rounded-[2rem] flex items-center gap-5 cursor-pointer select-none relative overflow-hidden group" style="${cardStyle}">
+                        <div class="absolute inset-0 bg-gradient-to-r from-[rgba(${rgb},0.05)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div class="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 border relative z-10 transition-transform group-hover:scale-110 duration-300" style="${iconStyle}">
+                            <i class="ph ${a.icon} text-3xl drop-shadow-sm"></i>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-bold text-white text-lg tracking-tight">${a.title}</h3>
-                            <p class="text-xs text-slate-400 font-medium">${a.desc || 'Module'}</p>
+                        <div class="flex-1 min-w-0 relative z-10">
+                            <h3 class="font-bold text-white text-xl tracking-tight mb-0.5 group-hover:text-brain-accent transition-colors">${a.title}</h3>
+                            <p class="text-sm text-slate-400 font-medium truncate opacity-70">${a.desc || 'Module'}</p>
                         </div>
-                        <div class="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-500">
-                            <i class="ph ph-caret-right text-lg"></i>
+                        <div class="w-12 h-12 rounded-full bg-slate-800/30 flex items-center justify-center text-slate-500/70 border border-slate-700/30 group-hover:border-brain-accent/30 group-hover:text-brain-accent transition-all relative z-10">
+                            <i class="ph ph-caret-right-bold text-lg"></i>
                         </div>
                     </div>
                 `;
             }); 
-        }
-
-        function switchTab(id) { 
-            if(id === 'dashboard') {
-                goBack(); // Ensure we are out of iframe
-                document.getElementById('view-dashboard').classList.remove('hidden');
-                document.getElementById('view-app-viewer').classList.add('hidden');
-            }
-            // Toggle active states
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-            if(id === 'dashboard') {
-                document.getElementById('nav-dashboard').classList.add('active');
-                document.getElementById('nav-apps').classList.remove('active'); // Since they are same view
-            }
         }
 
         function openApp(i) { 
@@ -226,28 +155,14 @@
             document.getElementById('app-frame').src = a.url; 
             document.getElementById('view-dashboard').classList.add('hidden'); 
             document.getElementById('view-app-viewer').classList.remove('hidden'); 
-            document.querySelector('nav').classList.add('hidden'); 
         }
 
         function goBack() { 
             document.getElementById('app-frame').src = ""; 
             document.getElementById('view-app-viewer').classList.add('hidden'); 
-            document.querySelector('nav').classList.remove('hidden'); 
             document.getElementById('view-dashboard').classList.remove('hidden'); 
         }
 
-        // --- SAVERS ---
-        function openQuickCapture() { resetQa(); document.getElementById('quick-add-modal').classList.remove('hidden'); }
-        function closeQuickCapture() { document.getElementById('quick-add-modal').classList.add('hidden'); }
-        function resetQa() { document.getElementById('qa-menu').classList.remove('hidden'); ['qa-task','qa-journal','qa-expense','qa-food'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-        function showQaForm(type) { document.getElementById('qa-menu').classList.add('hidden'); document.getElementById(`qa-${type}`).classList.remove('hidden'); }
-        
-        function saveQuickTask() { const t=document.getElementById('t-title').value; if(!t)return; const tasks=JSON.parse(localStorage.getItem('tm_tasks'))||[]; tasks.push({id:Date.now(),title:t,status:'pending',priority:'medium',dueDate:new Date().toISOString().split('T')[0]}); localStorage.setItem('tm_tasks',JSON.stringify(tasks)); closeQuickCapture(); alert("Saved"); }
-        function saveQuickFood() { const n=document.getElementById('f-name').value; if(!n)return; const p=JSON.parse(localStorage.getItem('journal_restaurants'))||[]; p.unshift({id:Date.now(),name:n,status:'wishlist',date:new Date().toISOString()}); localStorage.setItem('journal_restaurants',JSON.stringify(p)); closeQuickCapture(); alert("Saved"); }
-        function saveQuickJournal() { const t=document.getElementById('j-title').value; const b=document.getElementById('j-body').value; if(!t)return; const e=JSON.parse(localStorage.getItem('jn_entries'))||[]; e.unshift({id:Date.now(),title:t,body:b,date:new Date().toISOString(),mood:'Neutral'}); localStorage.setItem('jn_entries',JSON.stringify(e)); closeQuickCapture(); alert("Saved"); }
-        function saveQuickExpense() { const a=document.getElementById('e-amount').value; const d=document.getElementById('e-desc').value; if(!a)return; const tx=JSON.parse(localStorage.getItem('fin_transactions'))||[]; tx.unshift({id:Date.now(),amount:parseFloat(a),description:d,date:new Date().toISOString(),type:'expense'}); localStorage.setItem('fin_transactions',JSON.stringify(tx)); closeQuickCapture(); alert("Logged"); }
-
-        // --- UTILS ---
         function resetApps() { localStorage.setItem('brain_apps', JSON.stringify(defaultApps)); window.location.reload(); }
         function loadUserData(){const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'Josh'};document.getElementById('greeting-text').innerText=new Date().getHours()<12?'Good Morning':'Good Afternoon';if(u.avatar)document.getElementById('header-avatar').src=u.avatar;}
         function openSettings(){document.getElementById('settings-modal').classList.remove('hidden');const u=JSON.parse(localStorage.getItem('brain_user'))||{name:'User'};document.getElementById('settings-name').value=u.name;document.getElementById('settings-api-key').value=localStorage.getItem('brain_gemini_key')||'';}
@@ -255,7 +170,7 @@
         function openModuleModal(){document.getElementById('module-modal').classList.remove('hidden');}
         function saveModule(){const t=document.getElementById('mod-title').value;if(!t)return;const n={id:'app-'+Date.now(),title:t,desc:document.getElementById('mod-desc').value,icon:document.getElementById('mod-icon').value||'ph-cube',color:'blue',url:document.getElementById('mod-url').value};myApps.push(n);localStorage.setItem('brain_apps',JSON.stringify(myApps));renderApps();document.getElementById('module-modal').classList.add('hidden');}
         function exportData(){const d={...localStorage};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`JoshOS_Backup.json`;a.click();URL.revokeObjectURL(u);}
-        async function generateDailyBriefing() { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-modal-body').innerText = "Thinking..."; const k=localStorage.getItem('brain_gemini_key'); if(!k) { document.getElementById('ai-modal-body').innerText="No API Key"; return; } try { const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${k}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:"Daily briefing for Josh"}]}]})}); const d=await r.json(); document.getElementById('ai-modal-body').innerHTML=marked.parse(d.candidates[0].content.parts[0].text); } catch(e){document.getElementById('ai-modal-body').innerText="Error";} }
+        function logout() { localStorage.removeItem('brain_session'); window.location.href='login.html'; }
 
         init();
     </script>
