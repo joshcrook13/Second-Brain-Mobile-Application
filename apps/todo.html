@@ -57,18 +57,11 @@
         .all-card { width: 60px; height: 85px; border-radius: 22px; background: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: 800; color: #94A3B8; transition: all 0.2s; }
         .all-card.active { background: #1B1B1B; color: white; box-shadow: 0 8px 20px rgba(0,0,0,0.2); transform: translateY(-2px); }
 
-        .task-item { border-radius: 24px; padding: 20px; position: relative; transition: all 0.2s ease-in-out; touch-action: manipulation; }
+        .task-item { border-radius: 24px; padding: 20px; position: relative; transition: all 0.2s ease-in-out; }
         .task-item:active { transform: scale(0.98); }
         .task-item.done { background-color: #E2E8F0; border: 1px solid #CBD5E1; box-shadow: none; }
         .task-item.active-task { background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         
-        /* Ghost element when dragging */
-        .sortable-ghost { opacity: 0.4; background: #F1F5F9; border: 2px dashed #94A3B8; transform: scale(0.95); }
-        .sortable-drag { cursor: grabbing; opacity: 1; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transform: scale(1.02); }
-
-        .delete-btn { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #EF4444; background: #FEF2F2; opacity: 0; transition: opacity 0.2s; z-index: 10; }
-        .task-item:hover .delete-btn { opacity: 1; }
-
         .project-card { background: white; padding: 20px; border-radius: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); transition: transform 0.1s; display: flex; flex-direction: column; justify-content: space-between; height: 140px; }
         .project-card:active { transform: scale(0.97); }
         .project-add-card { border: 2px dashed #E2E8F0; background: transparent; justify-content: center; align-items: center; color: #94A3B8; }
@@ -86,6 +79,14 @@
         .subtask-controls { display: none; }
         .is-editing .subtask-controls { display: flex; }
         .is-editing .subtask-delete { display: block !important; }
+
+        /* Full Calendar Grid Styles */
+        .cal-day-lg { height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px; font-weight: 700; font-size: 16px; position: relative; transition: all 0.2s; border: 1px solid transparent; }
+        .cal-day-lg.today { background: #E0E7FF; color: #6B5AE0; border: 1px solid #6B5AE0; }
+        .cal-day-lg:active { background: #F1F5F9; transform: scale(0.95); }
+        .cal-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; }
+        .cal-dot.active { background: #6B5AE0; }
+        .cal-dot.done { background: #CBD5E1; }
 
         /* Nav Bar */
         .nav-bar { background: white; border-top-left-radius: 35px; border-top-right-radius: 35px; box-shadow: 0 -5px 40px rgba(0,0,0,0.05); position: fixed; bottom: 0; width: 100%; z-index: 50; }
@@ -127,18 +128,20 @@
         </div>
 
         <div id="view-calendar" class="view-section hidden flex flex-col h-full">
-            <main class="flex-1 overflow-y-auto hide-scroll px-6 pt-8 pb-32">
+            <header class="px-6 pt-8 pb-4 shrink-0">
                 <h1 class="text-2xl font-bold mb-6">Calendar</h1>
-                <div class="bg-white rounded-[30px] p-6 shadow-sm mb-8">
+                <div class="bg-white rounded-[30px] p-6 shadow-sm">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="font-bold text-lg" id="cal-month-name">Month</h2>
-                        <div class="flex gap-2"><button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center"><i class="ph-bold ph-caret-left"></i></button><button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center"><i class="ph-bold ph-caret-right"></i></button></div>
+                        <div class="flex gap-2">
+                            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center"><i class="ph-bold ph-caret-left"></i></button>
+                            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center"><i class="ph-bold ph-caret-right"></i></button>
+                        </div>
                     </div>
                     <div class="grid grid-cols-7 gap-2 text-center text-xs font-bold text-gray-400 mb-2"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
-                    <div id="month-grid" class="grid grid-cols-7 gap-2 text-center"></div>
+                    <div id="month-grid" class="grid grid-cols-7 gap-1 text-center"></div>
                 </div>
-                <div id="calendar-tasks" class="space-y-3"></div>
-            </main>
+            </header>
         </div>
 
         <div id="view-projects" class="view-section hidden flex flex-col h-full">
@@ -162,6 +165,17 @@
             </main>
         </div>
 
+        <div id="view-day-detail" class="hidden fixed inset-0 bg-task-bg z-[2000] flex flex-col h-[100dvh] slide-in-right">
+            <div class="px-6 pt-8 pb-4 flex items-center justify-between shrink-0 bg-task-bg/95 backdrop-blur-sm z-10">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeDayDetail()" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-task-text"><i class="ph-bold ph-caret-left text-xl"></i></button>
+                    <h1 class="text-xl font-bold" id="day-detail-title">Date</h1>
+                </div>
+                <button onclick="openAddViewFromDay()" class="px-4 py-2 bg-task-purple text-white rounded-xl text-xs font-bold shadow-glow">+ Add</button>
+            </div>
+            <div class="flex-1 overflow-y-auto hide-scroll px-6 pb-40 space-y-4" id="day-task-list"></div>
+        </div>
+
         <div id="view-project-detail" class="hidden fixed inset-0 bg-task-bg z-[2000] flex flex-col h-[100dvh] slide-in-right">
             <div class="px-6 pt-8 pb-4 flex items-center justify-between shrink-0 bg-task-bg/95 backdrop-blur-sm z-10">
                 <div class="flex items-center gap-4">
@@ -171,13 +185,13 @@
                 <button onclick="openAddViewFromProject()" class="px-4 py-2 bg-task-purple text-white rounded-xl text-xs font-bold shadow-glow">+ Add Task</button>
             </div>
             <div class="flex-1 overflow-y-auto hide-scroll px-6 pb-40 space-y-4">
-                <div class="min-h-[100px] p-2" id="detail-list-todo" data-status="todo"></div>
-                <div class="min-h-[100px] p-2" id="detail-list-progress" data-status="progress"></div>
-                <div class="min-h-[100px] p-2" id="detail-list-done" data-status="done"></div>
+                <div id="detail-list-todo" class="space-y-3"></div>
+                <div id="detail-list-progress" class="space-y-3"></div>
+                <div id="detail-list-done" class="space-y-3"></div>
             </div>
         </div>
 
-        <div id="view-task-detail" class="hidden fixed inset-0 bg-task-bg z-[2000] flex flex-col h-[100dvh] slide-in-right">
+        <div id="view-task-detail" class="hidden fixed inset-0 bg-task-bg z-[3000] flex flex-col h-[100dvh] slide-in-right">
             <div class="px-6 pt-8 pb-4 flex items-center justify-between shrink-0">
                 <button onclick="closeTaskDetail()" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-task-text"><i class="ph-bold ph-caret-left text-xl"></i></button>
                 <div class="flex gap-2">
@@ -193,9 +207,7 @@
                             <i class="ph-bold ph-caret-down absolute right-0 top-0.5 text-xs text-gray-400 pointer-events-none opacity-0 transition-opacity" id="td-group-icon"></i>
                         </div>
                         <select id="td-prio-select" onchange="updateTaskField('priority', this.value)" class="editable-input appearance-none badge-prio font-bold outline-none text-center border-none cursor-pointer" disabled>
-                            <option value="High">HIGH</option>
-                            <option value="Medium">MED</option>
-                            <option value="Low">LOW</option>
+                            <option value="High">HIGH</option><option value="Medium">MED</option><option value="Low">LOW</option>
                         </select>
                     </div>
                     <input id="td-title-input" type="text" class="editable-input text-2xl font-bold mb-2 leading-tight w-full outline-none text-task-text placeholder-gray-300" onchange="updateTaskField('title', this.value)" readonly>
@@ -221,7 +233,7 @@
             </div>
         </div>
         
-        <div id="view-add-project" class="hidden fixed inset-0 bg-black/50 z-[3000] flex items-center justify-center p-6 fade-in">
+        <div id="view-add-project" class="hidden fixed inset-0 bg-black/50 z-[4000] flex items-center justify-center p-6 fade-in">
             <div class="bg-white w-full max-w-sm rounded-[30px] p-6 shadow-2xl">
                 <h3 class="text-xl font-bold mb-4">New Project</h3>
                 <input id="inp-new-project" class="w-full bg-gray-100 rounded-xl px-4 py-3 font-bold text-task-text outline-none mb-6" placeholder="Project Name">
@@ -242,7 +254,7 @@
         <button onclick="switchTab('profile')" class="nav-icon" id="nav-profile"><i class="ph-fill ph-user"></i></button>
     </nav>
 
-    <div id="view-add" class="hidden fixed inset-0 bg-task-bg z-[3000] flex flex-col h-[100dvh] slide-up">
+    <div id="view-add" class="hidden fixed inset-0 bg-task-bg z-[4000] flex flex-col h-[100dvh] slide-up">
         <div class="px-6 pt-8 pb-4 flex items-center justify-between shrink-0">
             <button onclick="closeAddView()" class="w-10 h-10 flex items-center justify-center text-task-text"><i class="ph-bold ph-caret-left text-xl"></i></button>
             <h1 class="text-xl font-bold">Add Task</h1>
@@ -279,6 +291,7 @@
         let currentFilter = 'all';
         let displayMonth = new Date();
         let currentViewingGroup = null;
+        let viewingDay = null;
         let activeTaskId = null;
         let tempSubtasks = [];
         let isEditing = false;
@@ -299,9 +312,12 @@
             document.querySelectorAll('.nav-icon').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${tab}`).classList.remove('hidden');
             document.getElementById(`nav-${tab}`).classList.add('active');
+            // Hide overlays
             document.getElementById('view-project-detail').classList.add('hidden');
+            document.getElementById('view-day-detail').classList.add('hidden'); 
             document.getElementById('view-task-detail').classList.add('hidden');
-            if(tab==='calendar') { renderCalendarGrid(); renderCalendarList(); }
+            
+            if(tab==='calendar') { renderCalendarGrid(); } 
             if(tab==='projects') { renderProjects(); updateStats(); }
             if(tab==='profile') updateStats();
         }
@@ -322,78 +338,56 @@
                 c.innerHTML += `<div onclick="selectDate('${s}')" class="date-card cursor-pointer ${active}"><span class="text-[10px] font-bold mb-1 ${txt}">${shortMonths[d.getMonth()]}</span><span class="text-xl font-bold ${txt}">${d.getDate()}</span><span class="text-[10px] font-semibold mt-1 ${txt}">${dayNames[d.getDay()]}</span>${dotHTML}</div>`;
             }
         }
-        
-        function selectDate(s) { 
-            selectedDate=s; 
-            globalExpandState = false; 
-            updateToggleButton();
-            renderDateStrip(); 
-            renderTasks(); 
-        }
+        function selectDate(s) { selectedDate=s; globalExpandState = false; updateToggleButton(); renderDateStrip(); renderTasks(); }
         
         function renderTasks() {
             const c = document.getElementById('task-list'); c.innerHTML = '';
-            let filteredTasks = [];
             
-            if(selectedDate === 'ALL') {
-                filteredTasks = tasks.filter(t => currentFilter === 'all' || t.status === currentFilter);
-                filteredTasks.sort((a,b) => new Date(a.date) - new Date(b.date));
-            } else {
-                filteredTasks = tasks.filter(t => t.date === selectedDate && (currentFilter==='all' || t.status===currentFilter));
-            }
+            // --- FILTER LOGIC (UPDATED) ---
+            let filteredTasks = tasks.filter(t => {
+                // 1. Date Check
+                const dateMatch = (selectedDate === 'ALL') ? true : (t.date === selectedDate);
+                if (!dateMatch) return false;
+
+                // 2. Status Check
+                if (currentFilter === 'all') {
+                    // "All" filter now means ONLY Active tasks (todo + progress)
+                    return t.status !== 'done';
+                }
+                // Otherwise return specific match (todo, progress, done)
+                return t.status === currentFilter;
+            });
+
+            // Sort logic: Overdue first, then date
+            if (selectedDate === 'ALL') filteredTasks.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             if(filteredTasks.length === 0) document.getElementById('empty-state').classList.remove('hidden');
             else {
                 document.getElementById('empty-state').classList.add('hidden');
                 const groups = {};
                 filteredTasks.forEach(t => { if(!groups[t.group]) groups[t.group] = []; groups[t.group].push(t); });
-                
                 Object.keys(groups).sort().forEach(groupName => {
                     const safeId = groupName.replace(/[^a-zA-Z0-9]/g, '-');
-                    const count = groups[groupName].filter(t => t.status !== 'done').length;
+                    const count = groups[groupName].length; // Active count is inherently filtered by above logic
                     const hiddenClass = globalExpandState ? '' : 'hidden';
                     const rotate = globalExpandState ? 'rotate(0deg)' : 'rotate(-90deg)';
-
-                    c.innerHTML += `
-                        <div class="mb-2">
-                            <div onclick="toggleGroup('${safeId}')" class="flex items-center justify-between py-2 cursor-pointer select-none">
-                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2">
-                                    <i id="icon-${safeId}" class="ph-bold ph-caret-down transition-transform duration-200" style="transform: ${rotate}"></i>
-                                    ${groupName} <span class="text-task-purple">(${count})</span>
-                                </h3>
-                                <div class="h-px bg-gray-200 flex-1 ml-4"></div>
-                            </div>
-                            <div id="list-${safeId}" class="space-y-3 transition-all ${hiddenClass}">
-                                ${groups[groupName].map(t => createTaskHTML(t)).join('')}
-                            </div>
-                        </div>`;
+                    c.innerHTML += `<div class="mb-2"><div onclick="toggleGroup('${safeId}')" class="flex items-center justify-between py-2 cursor-pointer select-none"><h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2"><i id="icon-${safeId}" class="ph-bold ph-caret-down transition-transform duration-200" style="transform: ${rotate}"></i>${groupName} <span class="text-task-purple">(${count})</span></h3><div class="h-px bg-gray-200 flex-1 ml-4"></div></div><div id="list-${safeId}" class="space-y-3 transition-all ${hiddenClass}">${groups[groupName].map(t => createTaskHTML(t)).join('')}</div></div>`;
                 });
             }
         }
 
         function toggleGroup(id) {
-            const list = document.getElementById(`list-${id}`);
-            const icon = document.getElementById(`icon-${id}`);
+            const list = document.getElementById(`list-${id}`); const icon = document.getElementById(`icon-${id}`);
             if(list) list.classList.toggle('hidden');
-            if(icon) {
-                const isHidden = list.classList.contains('hidden');
-                icon.style.transform = isHidden ? 'rotate(-90deg)' : 'rotate(0deg)';
-            }
+            if(icon) { const isHidden = list.classList.contains('hidden'); icon.style.transform = isHidden ? 'rotate(-90deg)' : 'rotate(0deg)'; }
         }
-
         function toggleAllGroups() {
-            globalExpandState = !globalExpandState;
-            updateToggleButton();
-            const lists = document.querySelectorAll('[id^="list-"]');
-            const icons = document.querySelectorAll('[id^="icon-"]');
+            globalExpandState = !globalExpandState; updateToggleButton();
+            const lists = document.querySelectorAll('[id^="list-"]'); const icons = document.querySelectorAll('[id^="icon-"]');
             lists.forEach(el => { if(globalExpandState) el.classList.remove('hidden'); else el.classList.add('hidden'); });
             icons.forEach(el => { el.style.transform = globalExpandState ? 'rotate(0deg)' : 'rotate(-90deg)'; });
         }
-
-        function updateToggleButton() {
-            const btn = document.getElementById('btn-toggle-all');
-            btn.innerText = globalExpandState ? 'Collapse All' : 'Expand All';
-        }
+        function updateToggleButton() { document.getElementById('btn-toggle-all').innerText = globalExpandState ? 'Collapse All' : 'Expand All'; }
 
         function createTaskHTML(t) {
             const style = getProjectStyle(t.group);
@@ -419,18 +413,50 @@
             return `
                 <div class="task-item ${isDoneClass} flex flex-col cursor-pointer mb-3" data-id="${t.id}" onclick="openTaskDetail(${t.id})">
                     <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${t.group}</p>
-                            <h3 class="font-bold text-lg leading-tight ${titleClass}">${t.title}</h3>
-                        </div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${t.group}</p><h3 class="font-bold text-lg leading-tight ${titleClass}">${t.title}</h3></div>
                         <div class="w-10 h-10 rounded-xl ${style.bg} ${style.text} flex items-center justify-center text-xl shrink-0"><i class="ph-fill ${style.icon}"></i></div>
                     </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="flex gap-2 items-center flex-wrap">${dateBadge} <span class="badge-prio ${prioClass}">${t.priority || 'MED'}</span> ${subtaskBadge}</div>
-                        ${statusBtn}
-                    </div>
+                    <div class="flex justify-between items-center mt-2"><div class="flex gap-2 items-center flex-wrap">${dateBadge} <span class="badge-prio ${prioClass}">${t.priority || 'MED'}</span> ${subtaskBadge}</div>${statusBtn}</div>
                 </div>`;
         }
+
+        // --- FULL CALENDAR LOGIC ---
+        function changeMonth(dir) { displayMonth.setMonth(displayMonth.getMonth() + dir); renderCalendarGrid(); }
+        function renderCalendarGrid() {
+            const year = displayMonth.getFullYear(); const month = displayMonth.getMonth();
+            document.getElementById('cal-month-name').innerText = `${monthNames[month]} ${year}`;
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('month-grid'); grid.innerHTML = '';
+            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = new Date(year, month, d+1).toISOString().split('T')[0];
+                const activeTasks = tasks.some(t => t.date === dateStr && t.status !== 'done');
+                const completedTasks = tasks.some(t => t.date === dateStr && t.status === 'done');
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                let dotHTML = '';
+                if(activeTasks) dotHTML = '<div class="cal-dot active"></div>';
+                else if(completedTasks) dotHTML = '<div class="cal-dot done"></div>';
+                grid.innerHTML += `<div onclick="openDayDetail('${dateStr}')" class="cal-day-lg cursor-pointer ${isToday?'today':''}">${d} ${dotHTML}</div>`;
+            }
+        }
+
+        // --- DAY DETAIL OVERLAY ---
+        function openDayDetail(dateStr) {
+            viewingDay = dateStr;
+            document.getElementById('view-day-detail').classList.remove('hidden');
+            const d = new Date(dateStr);
+            document.getElementById('day-detail-title').innerText = `${d.getDate()} ${monthNames[d.getMonth()]}`;
+            renderDayTasks();
+        }
+        function closeDayDetail() { document.getElementById('view-day-detail').classList.add('hidden'); viewingDay = null; }
+        function renderDayTasks() {
+            const c = document.getElementById('day-task-list'); c.innerHTML = '';
+            const dayTasks = tasks.filter(t => t.date === viewingDay);
+            if(dayTasks.length === 0) c.innerHTML = '<p class="text-center text-gray-400 mt-10">No tasks for this day.</p>';
+            else dayTasks.forEach(t => c.innerHTML += createTaskHTML(t));
+        }
+        function openAddViewFromDay() { openAddView(); document.getElementById('inp-date').value = viewingDay; }
 
         // --- PROJECTS ---
         function renderProjects() {
@@ -453,7 +479,7 @@
             return styles[Math.abs(hash)%styles.length];
         }
 
-        // --- TASK DETAIL ---
+        // --- TASK DETAIL (EDITABLE) ---
         function openTaskDetail(id) {
             activeTaskId = id;
             const task = tasks.find(t => t.id === id);
@@ -469,11 +495,7 @@
         }
         function toggleEditMode() {
             isEditing = !isEditing;
-            const container = document.getElementById('task-detail-content');
-            const inputs = document.querySelectorAll('.editable-input');
-            const btn = document.getElementById('btn-edit-toggle');
-            const grpIcon = document.getElementById('td-group-icon');
-            const dateWrap = document.getElementById('td-date-wrapper');
+            const container = document.getElementById('task-detail-content'); const inputs = document.querySelectorAll('.editable-input'); const btn = document.getElementById('btn-edit-toggle'); const grpIcon = document.getElementById('td-group-icon'); const dateWrap = document.getElementById('td-date-wrapper');
             if(isEditing) { container.classList.add('is-editing'); inputs.forEach(el => { el.removeAttribute('readonly'); el.removeAttribute('disabled'); }); btn.innerHTML = '<i class="ph-bold ph-check text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"; grpIcon.style.opacity = '1'; dateWrap.classList.add('bg-white', 'border-gray-200'); dateWrap.classList.remove('bg-gray-50', 'border-transparent'); } else { container.classList.remove('is-editing'); inputs.forEach(el => { if(el.tagName === 'SELECT' || el.type === 'date') el.setAttribute('disabled', 'true'); else el.setAttribute('readonly', 'true'); }); btn.innerHTML = '<i class="ph-bold ph-pencil-simple text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"; grpIcon.style.opacity = '0'; dateWrap.classList.remove('bg-white', 'border-gray-200'); dateWrap.classList.add('bg-gray-50', 'border-transparent'); }
         }
         function updateTaskField(field, value) { if(!activeTaskId) return; const task = tasks.find(t => t.id === activeTaskId); task[field] = value; if(field === 'priority') updatePrioStyle(value); saveToLocal(); refreshAllViews(); }
@@ -486,7 +508,7 @@
         function toggleSubTask(idx) { const task = tasks.find(t => t.id === activeTaskId); task.subtasks[idx].done = !task.subtasks[idx].done; saveToLocal(); renderSubTasks(task); refreshAllViews(); }
         function deleteSubTask(idx) { const task = tasks.find(t => t.id === activeTaskId); task.subtasks.splice(idx, 1); saveToLocal(); renderSubTasks(task); refreshAllViews(); }
 
-        // --- PROJECT DETAIL (DRAG & DROP) ---
+        // --- PROJECT DETAIL VIEW ---
         function openGroupDetail(group) {
             currentViewingGroup = group;
             document.getElementById('view-project-detail').classList.remove('hidden');
@@ -494,45 +516,15 @@
             renderGroupTasks(group);
         }
         function renderGroupTasks(group) {
-            const containers = {
-                todo: document.getElementById('detail-list-todo'),
-                progress: document.getElementById('detail-list-progress'),
-                done: document.getElementById('detail-list-done')
-            };
-            
-            // Reset HTML
+            const containers = { todo: document.getElementById('detail-list-todo'), progress: document.getElementById('detail-list-progress'), done: document.getElementById('detail-list-done') };
             containers.todo.innerHTML = '<h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-4">To Do</h3>';
             containers.progress.innerHTML = '<h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-4">In Progress</h3>';
             containers.done.innerHTML = '<h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 mt-4">Completed</h3>';
-            
             const groupTasks = tasks.filter(t => t.group === group);
-            groupTasks.forEach(t => {
-                if(containers[t.status]) containers[t.status].innerHTML += createTaskHTML(t);
-            });
-
-            // Initialize Sortable
+            groupTasks.forEach(t => { if(containers[t.status]) containers[t.status].innerHTML += createTaskHTML(t); });
             ['todo', 'progress', 'done'].forEach(status => {
-                new Sortable(containers[status], {
-                    group: 'shared', // Allow dragging between lists
-                    animation: 150,
-                    delay: 100, // Slight delay for touch to prevent scrolling interference
-                    delayOnTouchOnly: true,
-                    ghostClass: 'sortable-ghost',
-                    dragClass: 'sortable-drag',
-                    onEnd: function (evt) {
-                        const itemEl = evt.item;
-                        const newStatus = evt.to.getAttribute('data-status');
-                        const taskId = parseInt(itemEl.getAttribute('data-id'));
-                        
-                        if (taskId && newStatus) {
-                            const task = tasks.find(t => t.id === taskId);
-                            if (task && task.status !== newStatus) {
-                                task.status = newStatus;
-                                saveToLocal();
-                                refreshAllViews(); // Update counts elsewhere
-                            }
-                        }
-                    }
+                new Sortable(containers[status], { group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
+                    onEnd: function (evt) { const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status'); const taskId = parseInt(itemEl.getAttribute('data-id')); if (taskId && newStatus) { const task = tasks.find(t => t.id === taskId); if (task && task.status !== newStatus) { task.status = newStatus; saveToLocal(); refreshAllViews(); } } }
                 });
             });
         }
@@ -555,30 +547,13 @@
         function toggleStatus(id, e) { e.stopPropagation(); const task = tasks.find(t => t.id === id); task.status = task.status === 'done' ? 'todo' : (task.status === 'todo' ? 'progress' : 'done'); saveToLocal(); refreshAllViews(); }
         function deleteTask(id, e) { e.stopPropagation(); if(confirm('Delete?')) { tasks = tasks.filter(t => t.id !== id); saveToLocal(); refreshAllViews(); } }
         function setFilter(f) { currentFilter=f; renderTasks(); ['all','todo','progress','done'].forEach(k => document.getElementById(`tab-${k}`).className = k===f ? "px-5 py-2.5 rounded-2xl font-bold text-sm bg-task-purple text-white shadow-lg transition-all flex-shrink-0" : "px-5 py-2.5 rounded-2xl font-bold text-sm bg-white text-gray-400 transition-all flex-shrink-0"); }
-        function refreshAllViews() { selectDate(selectedDate); updateStats(); if(currentViewingGroup) renderGroupTasks(currentViewingGroup); renderProjects(); }
-        function changeMonth(dir) { displayMonth.setMonth(displayMonth.getMonth() + dir); renderCalendarGrid(); }
-        
-        function renderCalendarGrid() {
-            const year = displayMonth.getFullYear(); const month = displayMonth.getMonth();
-            document.getElementById('cal-month-name').innerText = `${monthNames[month]} ${year}`;
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const grid = document.getElementById('month-grid'); grid.innerHTML = '';
-            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = new Date(year, month, d+1).toISOString().split('T')[0];
-                const hasTask = tasks.some(t => t.date === dateStr);
-                const isToday = dateStr === new Date().toISOString().split('T')[0];
-                grid.innerHTML += `<div class="cal-day ${isToday?'today':''} ${hasTask?'has-task':''}">${d}</div>`;
-            }
-            renderCalendarList();
-        }
-        function renderCalendarList() {
-            const list = document.getElementById('calendar-tasks'); list.innerHTML = '';
-            const m = displayMonth.getMonth(); const y = displayMonth.getFullYear();
-            const mTasks = tasks.filter(t => { const d=new Date(t.date); return d.getMonth()===m && d.getFullYear()===y; });
-            if(mTasks.length === 0) { list.innerHTML = '<p class="text-center text-gray-400 text-sm mt-4">No tasks this month</p>'; return; }
-            mTasks.forEach(t => list.innerHTML += createTaskHTML(t));
+        function refreshAllViews() { 
+            if(selectedDate) selectDate(selectedDate); // Refreshes Home
+            updateStats(); 
+            if(currentViewingGroup) renderGroupTasks(currentViewingGroup); // Refreshes Project Detail
+            if(viewingDay) renderDayTasks(); // Refreshes Calendar Overlay
+            renderCalendarGrid(); 
+            renderProjects();
         }
         function updateStats() {
             document.getElementById('stat-completed').innerText = tasks.filter(t=>t.status==='done').length;
