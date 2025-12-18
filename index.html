@@ -12,7 +12,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v28 Active'));
+          navigator.serviceWorker.register('sw.js').then(reg => console.log('JoshOS v29 Active'));
         });
       }
     </script>
@@ -43,16 +43,15 @@
     <style>
         body { background-color: #F8F9FE; color: #1E293B; -webkit-tap-highlight-color: transparent; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         
-        /* Flexible Tile that fills available space */
+        /* Fixed Height Tile to prevent squashing/overlapping */
         .app-tile {
             background: white;
             border-radius: 24px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.03);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid rgba(255,255,255,0.6);
-            height: 100%; /* Fill the grid cell */
+            height: 170px; /* Fixed height ensures they never squash */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -71,16 +70,16 @@
             gap: 8px;
             color: #64748B;
             transition: all 0.2s;
-            height: 100%;
+            height: 170px; /* Match app tile height */
         }
         .add-tile:active { background: rgba(255,255,255,0.8); border-color: #5F33E1; color: #5F33E1; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden bg-brain-bg font-sans pb-safe">
+<body class="h-screen flex flex-col overflow-hidden bg-brain-bg font-sans">
 
     <main class="flex-1 flex flex-col h-full overflow-hidden w-full relative">
         
-        <header class="h-24 flex items-center justify-between px-8 shrink-0 pt-6">
+        <header class="h-24 flex items-center justify-between px-8 shrink-0 pt-8 bg-brain-bg/95 backdrop-blur-sm z-10">
             <div>
                 <p class="text-xs font-bold text-brain-muted uppercase tracking-wider mb-1" id="date-display">LOADING...</p>
                 <h1 class="text-3xl font-extrabold text-brain-text tracking-tight leading-tight"><span id="greeting-text">Hello</span>,<br>Josh.</h1>
@@ -90,8 +89,9 @@
             </button>
         </header>
 
-        <div id="view-dashboard" class="flex-1 flex flex-col px-6 pb-6 overflow-hidden">
-            <div id="dashboard-apps" class="grid grid-cols-2 gap-4 flex-1 auto-rows-fr">
+        <div id="view-dashboard" class="flex-1 overflow-y-auto overflow-x-hidden px-6 pb-32 pt-4 hide-scroll">
+            
+            <div id="dashboard-apps" class="grid grid-cols-2 gap-4">
                 </div>
         </div>
 
@@ -137,7 +137,6 @@
 
         function init() {
             loadUserData();
-            // Auto-Repair
             let needsSave = false;
             defaultApps.forEach(defApp => {
                 if (!myApps.find(a => a.id === defApp.id)) { myApps.push(defApp); needsSave = true; }
@@ -152,7 +151,6 @@
             const c = document.getElementById('dashboard-apps'); 
             c.innerHTML = ''; 
             
-            // Icon Colors
             const colorMap = { 
                 emerald: 'bg-emerald-100 text-emerald-600', 
                 green: 'bg-green-100 text-green-600', 
@@ -162,7 +160,6 @@
                 blue: 'bg-blue-100 text-blue-600'
             };
 
-            // Render Apps
             myApps.forEach((a,i) => {
                 const theme = colorMap[a.color] || colorMap['blue'];
                 c.innerHTML += `
@@ -181,7 +178,7 @@
                 `;
             }); 
             
-            // Render "Add Button" as the last tile in the grid
+            // Add Button as the last tile
             c.innerHTML += `
                 <div onclick="openModuleModal()" class="add-tile cursor-pointer">
                     <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">

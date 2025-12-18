@@ -1,6 +1,6 @@
 // --- CONFIGURATION ---
 // CHANGE THIS NUMBER whenever you update your app
-const CACHE_NAME = 'josh-os-v28'; 
+const CACHE_NAME = 'josh-os-v29'; 
 
 // Add any new files you create here
 const urlsToCache = [
