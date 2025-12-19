@@ -42,9 +42,14 @@
         .prio-high { background: #FEE2E2; color: #EF4444; }
         .prio-med { background: #FEF3C7; color: #F59E0B; }
         .prio-low { background: #ECFCCB; color: #84CC16; }
-        .badge-date { font-size: 11px; font-weight: 600; color: #94A3B8; display: flex; align-items: center; gap: 4px; }
+        
+        .badge-date { font-size: 10px; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; }
         .badge-overdue { background: #FECACA; color: #DC2626; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
         .badge-today { background: #E0E7FF; color: #4F46E5; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        
+        /* Completed Badge */
+        .badge-completed { background: #DCFCE7; color: #166534; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+
         .badge-subtask { font-size: 10px; font-weight: 700; color: #64748B; background: #F1F5F9; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; }
 
         /* Components */
@@ -59,7 +64,7 @@
 
         .task-item { border-radius: 24px; padding: 20px; position: relative; transition: all 0.2s ease-in-out; }
         .task-item:active { transform: scale(0.98); }
-        .task-item.done { background-color: #E2E8F0; border: 1px solid #CBD5E1; box-shadow: none; }
+        .task-item.done { background-color: #F8FAFC; border: 1px solid #E2E8F0; box-shadow: none; opacity: 0.9; }
         .task-item.active-task { background-color: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         
         .project-card { background: white; padding: 20px; border-radius: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); transition: transform 0.1s; display: flex; flex-direction: column; justify-content: space-between; height: 140px; }
@@ -207,15 +212,28 @@
                             <i class="ph-bold ph-caret-down absolute right-0 top-0.5 text-xs text-gray-400 pointer-events-none opacity-0 transition-opacity" id="td-group-icon"></i>
                         </div>
                         <select id="td-prio-select" onchange="updateTaskField('priority', this.value)" class="editable-input appearance-none badge-prio font-bold outline-none text-center border-none cursor-pointer" disabled>
-                            <option value="High">HIGH</option><option value="Medium">MED</option><option value="Low">LOW</option>
+                            <option value="High">HIGH</option>
+                            <option value="Medium">MED</option>
+                            <option value="Low">LOW</option>
                         </select>
                     </div>
                     <input id="td-title-input" type="text" class="editable-input text-2xl font-bold mb-2 leading-tight w-full outline-none text-task-text placeholder-gray-300" onchange="updateTaskField('title', this.value)" readonly>
                     <textarea id="td-desc-input" class="editable-input text-gray-500 text-sm leading-relaxed mb-4 w-full outline-none resize-none h-20 placeholder-gray-300" placeholder="Add description..." onchange="updateTaskField('description', this.value)" readonly></textarea>
-                    <div class="flex items-center gap-2 mb-6 p-2 rounded-xl w-fit border border-transparent transition-colors" id="td-date-wrapper">
-                        <i class="ph-fill ph-calendar text-task-purple text-lg"></i>
-                        <input type="date" id="td-date-input" class="font-bold text-sm bg-transparent outline-none text-task-text" onchange="updateTaskField('date', this.value)" disabled>
+                    
+                    <div class="flex flex-col gap-2 mb-6">
+                        <div class="flex items-center gap-2 p-2 rounded-xl w-fit border border-transparent transition-colors" id="td-date-wrapper">
+                            <i class="ph-fill ph-calendar text-task-purple text-lg"></i>
+                            <span class="text-xs font-bold uppercase text-gray-400 mr-2">Due:</span>
+                            <input type="date" id="td-date-input" class="editable-input font-bold text-sm bg-transparent outline-none text-task-text" onchange="updateTaskField('date', this.value)" disabled>
+                        </div>
+                        
+                        <div id="td-completed-wrapper" class="flex items-center gap-2 p-2 rounded-xl w-fit border border-transparent transition-colors hidden">
+                            <i class="ph-fill ph-check-circle text-green-600 text-lg"></i>
+                            <span class="text-xs font-bold uppercase text-green-700 mr-2">Done:</span>
+                            <input type="date" id="td-completed-input" class="editable-input font-bold text-sm bg-transparent outline-none text-green-800" onchange="updateTaskField('completedAt', this.value)" disabled>
+                        </div>
                     </div>
+
                     <div class="flex bg-gray-100 p-1 rounded-xl mb-6">
                         <button onclick="updateTaskStatus('todo')" id="btn-stat-todo" class="flex-1 py-2 rounded-lg text-xs font-bold text-gray-500">To Do</button>
                         <button onclick="updateTaskStatus('progress')" id="btn-stat-progress" class="flex-1 py-2 rounded-lg text-xs font-bold text-gray-500">In Progress</button>
@@ -342,9 +360,10 @@
         
         function renderTasks() {
             const c = document.getElementById('task-list'); c.innerHTML = '';
+            let filteredTasks = [];
             
             // --- FILTER LOGIC (UPDATED) ---
-            let filteredTasks = tasks.filter(t => {
+            filteredTasks = tasks.filter(t => {
                 // 1. Date Check
                 const dateMatch = (selectedDate === 'ALL') ? true : (t.date === selectedDate);
                 if (!dateMatch) return false;
@@ -358,7 +377,7 @@
                 return t.status === currentFilter;
             });
 
-            // Sort logic: Overdue first, then date
+            // Sort
             if (selectedDate === 'ALL') filteredTasks.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             if(filteredTasks.length === 0) document.getElementById('empty-state').classList.remove('hidden');
@@ -368,7 +387,7 @@
                 filteredTasks.forEach(t => { if(!groups[t.group]) groups[t.group] = []; groups[t.group].push(t); });
                 Object.keys(groups).sort().forEach(groupName => {
                     const safeId = groupName.replace(/[^a-zA-Z0-9]/g, '-');
-                    const count = groups[groupName].length; // Active count is inherently filtered by above logic
+                    const count = groups[groupName].length; 
                     const hiddenClass = globalExpandState ? '' : 'hidden';
                     const rotate = globalExpandState ? 'rotate(0deg)' : 'rotate(-90deg)';
                     c.innerHTML += `<div class="mb-2"><div onclick="toggleGroup('${safeId}')" class="flex items-center justify-between py-2 cursor-pointer select-none"><h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide flex items-center gap-2"><i id="icon-${safeId}" class="ph-bold ph-caret-down transition-transform duration-200" style="transform: ${rotate}"></i>${groupName} <span class="text-task-purple">(${count})</span></h3><div class="h-px bg-gray-200 flex-1 ml-4"></div></div><div id="list-${safeId}" class="space-y-3 transition-all ${hiddenClass}">${groups[groupName].map(t => createTaskHTML(t)).join('')}</div></div>`;
@@ -393,15 +412,20 @@
             const style = getProjectStyle(t.group);
             const todayStr = new Date().toISOString().split('T')[0];
             let dateBadge = '';
-            if(t.date < todayStr && t.status !== 'done') dateBadge = `<span class="badge-overdue">OVERDUE</span>`;
-            else if(t.date === todayStr) dateBadge = `<span class="badge-today">TODAY</span>`;
-            else dateBadge = `<span class="badge-date"><i class="ph-bold ph-calendar"></i> ${t.date.slice(5)}</span>`;
+            
+            if(t.status === 'done' && t.completedAt) {
+                dateBadge = `<span class="badge-completed"><i class="ph-bold ph-check-circle"></i> Done: ${t.completedAt}</span>`;
+            } else {
+                if(t.date < todayStr && t.status !== 'done') dateBadge = `<span class="badge-overdue">OVERDUE</span>`;
+                else if(t.date === todayStr) dateBadge = `<span class="badge-today">TODAY</span>`;
+                else dateBadge = `<span class="badge-date"><i class="ph-bold ph-calendar"></i> ${t.date.slice(5)}</span>`;
+            }
             
             let prioClass = t.priority === 'High' ? 'prio-high' : (t.priority === 'Low' ? 'prio-low' : 'prio-med');
             let statusBtn = '';
-            if(t.status === 'done') statusBtn = `<button onclick="toggleStatus(${t.id}, event)" class="status-btn text-[10px] bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-bold">Done</button>`;
-            else if(t.status === 'progress') statusBtn = `<button onclick="toggleStatus(${t.id}, event)" class="status-btn text-[10px] bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg font-bold">In Progress</button>`;
-            else statusBtn = `<button onclick="toggleStatus(${t.id}, event)" class="status-btn text-[10px] bg-gray-100 text-gray-500 px-3 py-1.5 rounded-lg font-bold">To Do</button>`;
+            if(t.status === 'done') statusBtn = `<button class="status-btn text-[10px] bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-bold cursor-default">Done</button>`;
+            else if(t.status === 'progress') statusBtn = `<button class="status-btn text-[10px] bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg font-bold cursor-default">In Progress</button>`;
+            else statusBtn = `<button class="status-btn text-[10px] bg-gray-100 text-gray-500 px-3 py-1.5 rounded-lg font-bold cursor-default">To Do</button>`;
 
             const isDoneClass = t.status === 'done' ? 'done' : 'active-task';
             const titleClass = t.status === 'done' ? 'line-through text-gray-400' : 'text-task-text';
@@ -410,13 +434,19 @@
             let subtaskBadge = '';
             if (totalSub > 0) subtaskBadge = `<span class="badge-subtask"><i class="ph-bold ph-checks"></i> ${doneSub}/${totalSub}</span>`;
 
+            // Display Two Badges if Completed: DUE and DONE
+            let displayDate = dateBadge;
+            if (t.status === 'done' && t.completedAt) {
+                 displayDate = `<span class="badge-date text-gray-400">Due: ${t.date.slice(5)}</span>` + dateBadge;
+            }
+
             return `
                 <div class="task-item ${isDoneClass} flex flex-col cursor-pointer mb-3" data-id="${t.id}" onclick="openTaskDetail(${t.id})">
                     <div class="flex justify-between items-start mb-2">
                         <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">${t.group}</p><h3 class="font-bold text-lg leading-tight ${titleClass}">${t.title}</h3></div>
                         <div class="w-10 h-10 rounded-xl ${style.bg} ${style.text} flex items-center justify-center text-xl shrink-0"><i class="ph-fill ${style.icon}"></i></div>
                     </div>
-                    <div class="flex justify-between items-center mt-2"><div class="flex gap-2 items-center flex-wrap">${dateBadge} <span class="badge-prio ${prioClass}">${t.priority || 'MED'}</span> ${subtaskBadge}</div>${statusBtn}</div>
+                    <div class="flex justify-between items-center mt-2"><div class="flex gap-2 items-center flex-wrap">${displayDate} <span class="badge-prio ${prioClass}">${t.priority || 'MED'}</span> ${subtaskBadge}</div>${statusBtn}</div>
                 </div>`;
         }
 
@@ -430,7 +460,9 @@
             const grid = document.getElementById('month-grid'); grid.innerHTML = '';
             for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
             for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = new Date(year, month, d+1).toISOString().split('T')[0];
+                const mStr = String(month + 1).padStart(2, '0');
+                const dStr = String(d).padStart(2, '0');
+                const dateStr = `${year}-${mStr}-${dStr}`;
                 const activeTasks = tasks.some(t => t.date === dateStr && t.status !== 'done');
                 const completedTasks = tasks.some(t => t.date === dateStr && t.status === 'done');
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
@@ -488,20 +520,61 @@
             document.getElementById('td-title-input').value = task.title;
             document.getElementById('td-desc-input').value = task.description || "";
             document.getElementById('td-date-input').value = task.date;
+            
             const groupSel = document.getElementById('td-group-select'); groupSel.innerHTML = ''; projects.forEach(p => { const opt = document.createElement('option'); opt.value = p; opt.innerText = p; if(p === task.group) opt.selected = true; groupSel.appendChild(opt); });
             const prioSel = document.getElementById('td-prio-select'); prioSel.value = task.priority || 'Medium'; updatePrioStyle(task.priority);
+            
+            // Completed Date Logic
+            const compWrap = document.getElementById('td-completed-wrapper');
+            const compInput = document.getElementById('td-completed-input');
+            if (task.status === 'done') {
+                compWrap.classList.remove('hidden');
+                compInput.value = task.completedAt || new Date().toISOString().split('T')[0];
+            } else {
+                compWrap.classList.add('hidden');
+            }
+
             ['todo', 'progress', 'done'].forEach(s => { const btn = document.getElementById(`btn-stat-${s}`); if(s === task.status) { btn.classList.remove('bg-transparent', 'text-gray-500'); btn.classList.add('bg-task-purple', 'text-white', 'shadow-md'); } else { btn.classList.add('bg-transparent', 'text-gray-500'); btn.classList.remove('bg-task-purple', 'text-white', 'shadow-md'); } });
             renderSubTasks(task); isEditing = true; toggleEditMode();
         }
+        
         function toggleEditMode() {
             isEditing = !isEditing;
-            const container = document.getElementById('task-detail-content'); const inputs = document.querySelectorAll('.editable-input'); const btn = document.getElementById('btn-edit-toggle'); const grpIcon = document.getElementById('td-group-icon'); const dateWrap = document.getElementById('td-date-wrapper');
-            if(isEditing) { container.classList.add('is-editing'); inputs.forEach(el => { el.removeAttribute('readonly'); el.removeAttribute('disabled'); }); btn.innerHTML = '<i class="ph-bold ph-check text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"; grpIcon.style.opacity = '1'; dateWrap.classList.add('bg-white', 'border-gray-200'); dateWrap.classList.remove('bg-gray-50', 'border-transparent'); } else { container.classList.remove('is-editing'); inputs.forEach(el => { if(el.tagName === 'SELECT' || el.type === 'date') el.setAttribute('disabled', 'true'); else el.setAttribute('readonly', 'true'); }); btn.innerHTML = '<i class="ph-bold ph-pencil-simple text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"; grpIcon.style.opacity = '0'; dateWrap.classList.remove('bg-white', 'border-gray-200'); dateWrap.classList.add('bg-gray-50', 'border-transparent'); }
+            const container = document.getElementById('task-detail-content'); const inputs = document.querySelectorAll('.editable-input'); const btn = document.getElementById('btn-edit-toggle'); const grpIcon = document.getElementById('td-group-icon'); const dateWrap = document.getElementById('td-date-wrapper'); const compWrap = document.getElementById('td-completed-wrapper'); const compInput = document.getElementById('td-completed-input');
+            if(isEditing) { 
+                container.classList.add('is-editing'); 
+                inputs.forEach(el => { el.removeAttribute('readonly'); el.removeAttribute('disabled'); }); 
+                if (!compWrap.classList.contains('hidden')) compInput.removeAttribute('disabled');
+                btn.innerHTML = '<i class="ph-bold ph-check text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"; grpIcon.style.opacity = '1'; dateWrap.classList.add('bg-white', 'border-gray-200'); dateWrap.classList.remove('bg-gray-50', 'border-transparent'); 
+            } else { 
+                container.classList.remove('is-editing'); 
+                inputs.forEach(el => { if(el.tagName === 'SELECT' || el.type === 'date') el.setAttribute('disabled', 'true'); else el.setAttribute('readonly', 'true'); }); 
+                compInput.setAttribute('disabled', 'true');
+                btn.innerHTML = '<i class="ph-bold ph-pencil-simple text-xl"></i>'; btn.className = "w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500"; grpIcon.style.opacity = '0'; dateWrap.classList.remove('bg-white', 'border-gray-200'); dateWrap.classList.add('bg-gray-50', 'border-transparent'); 
+            }
         }
-        function updateTaskField(field, value) { if(!activeTaskId) return; const task = tasks.find(t => t.id === activeTaskId); task[field] = value; if(field === 'priority') updatePrioStyle(value); saveToLocal(); refreshAllViews(); }
+        function updateTaskField(field, value) { 
+            if(!activeTaskId) return; 
+            const task = tasks.find(t => t.id === activeTaskId); 
+            task[field] = value; 
+            if(field === 'priority') updatePrioStyle(value); 
+            saveToLocal(); refreshAllViews(); 
+        }
         function updatePrioStyle(val) { const sel = document.getElementById('td-prio-select'); sel.className = `editable-input appearance-none badge-prio font-bold outline-none text-center border-none cursor-pointer ${val === 'High' ? 'prio-high' : (val === 'Low' ? 'prio-low' : 'prio-med')}`; }
         function closeTaskDetail() { document.getElementById('view-task-detail').classList.add('hidden'); activeTaskId = null; }
-        function updateTaskStatus(newStatus) { if(!activeTaskId) return; const task = tasks.find(t => t.id === activeTaskId); task.status = newStatus; saveToLocal(); openTaskDetail(activeTaskId); refreshAllViews(); }
+        
+        function updateTaskStatus(newStatus) { 
+            if(!activeTaskId) return; 
+            const task = tasks.find(t => t.id === activeTaskId); 
+            task.status = newStatus; 
+            if(newStatus === 'done') {
+                if (!task.completedAt) task.completedAt = new Date().toISOString().split('T')[0];
+            } else {
+                delete task.completedAt;
+            }
+            saveToLocal(); openTaskDetail(activeTaskId); refreshAllViews(); 
+        }
+        
         function deleteOpenTask() { if(confirm("Delete this task?")) { tasks = tasks.filter(t => t.id !== activeTaskId); saveToLocal(); closeTaskDetail(); refreshAllViews(); } }
         function renderSubTasks(task) { const list = document.getElementById('subtask-list'); list.innerHTML = ''; if(!task.subtasks) task.subtasks = []; task.subtasks.forEach((st, idx) => { list.innerHTML += `<div class="flex items-center justify-between subtask-item"><div onclick="toggleSubTask(${idx})" class="flex items-center gap-3 cursor-pointer"><div class="checkbox ${st.done ? 'checked' : ''}"><i class="ph-bold ph-check text-xs ${st.done ? '' : 'hidden'}"></i></div><span class="subtask-text text-sm font-bold ${st.done ? 'checked' : ''}">${st.text}</span></div><button onclick="deleteSubTask(${idx})" class="subtask-delete hidden text-red-400"><i class="ph-bold ph-trash"></i></button></div>`; }); }
         function addSubTask() { const input = document.getElementById('new-subtask'); if(!input.value.trim()) return; const task = tasks.find(t => t.id === activeTaskId); if(!task.subtasks) task.subtasks = []; task.subtasks.push({ text: input.value, done: false }); saveToLocal(); input.value = ''; renderSubTasks(task); }
@@ -524,7 +597,18 @@
             groupTasks.forEach(t => { if(containers[t.status]) containers[t.status].innerHTML += createTaskHTML(t); });
             ['todo', 'progress', 'done'].forEach(status => {
                 new Sortable(containers[status], { group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
-                    onEnd: function (evt) { const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status'); const taskId = parseInt(itemEl.getAttribute('data-id')); if (taskId && newStatus) { const task = tasks.find(t => t.id === taskId); if (task && task.status !== newStatus) { task.status = newStatus; saveToLocal(); refreshAllViews(); } } }
+                    onEnd: function (evt) { 
+                        const itemEl = evt.item; const newStatus = evt.to.getAttribute('data-status'); const taskId = parseInt(itemEl.getAttribute('data-id')); 
+                        if (taskId && newStatus) { 
+                            const task = tasks.find(t => t.id === taskId); 
+                            if (task && task.status !== newStatus) { 
+                                task.status = newStatus; 
+                                if(newStatus === 'done') task.completedAt = new Date().toISOString().split('T')[0];
+                                else delete task.completedAt;
+                                saveToLocal(); refreshAllViews(); 
+                            } 
+                        } 
+                    }
                 });
             });
         }
@@ -544,14 +628,14 @@
         }
 
         // --- SHARED UTILS ---
-        function toggleStatus(id, e) { e.stopPropagation(); const task = tasks.find(t => t.id === id); task.status = task.status === 'done' ? 'todo' : (task.status === 'todo' ? 'progress' : 'done'); saveToLocal(); refreshAllViews(); }
+        function toggleStatus(id, e) { /* READ ONLY */ e.stopPropagation(); }
         function deleteTask(id, e) { e.stopPropagation(); if(confirm('Delete?')) { tasks = tasks.filter(t => t.id !== id); saveToLocal(); refreshAllViews(); } }
         function setFilter(f) { currentFilter=f; renderTasks(); ['all','todo','progress','done'].forEach(k => document.getElementById(`tab-${k}`).className = k===f ? "px-5 py-2.5 rounded-2xl font-bold text-sm bg-task-purple text-white shadow-lg transition-all flex-shrink-0" : "px-5 py-2.5 rounded-2xl font-bold text-sm bg-white text-gray-400 transition-all flex-shrink-0"); }
         function refreshAllViews() { 
-            if(selectedDate) selectDate(selectedDate); // Refreshes Home
+            if(selectedDate) selectDate(selectedDate); 
             updateStats(); 
-            if(currentViewingGroup) renderGroupTasks(currentViewingGroup); // Refreshes Project Detail
-            if(viewingDay) renderDayTasks(); // Refreshes Calendar Overlay
+            if(currentViewingGroup) renderGroupTasks(currentViewingGroup); 
+            if(viewingDay) renderDayTasks(); 
             renderCalendarGrid(); 
             renderProjects();
         }
