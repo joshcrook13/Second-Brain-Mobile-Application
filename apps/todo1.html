@@ -431,7 +431,9 @@
             const grid = document.getElementById('month-grid'); grid.innerHTML = '';
             for(let i=0; i<firstDay; i++) grid.innerHTML += `<div></div>`;
             for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const mStr = String(month + 1).padStart(2, '0');
+                const dStr = String(d).padStart(2, '0');
+                const dateStr = `${year}-${mStr}-${dStr}`;
                 const activeTasks = tasks.some(t => t.date === dateStr && t.status !== 'done');
                 const completedTasks = tasks.some(t => t.date === dateStr && t.status === 'done');
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
